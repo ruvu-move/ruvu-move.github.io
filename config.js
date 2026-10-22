@@ -14,7 +14,7 @@ window.RUVU_CONFIG = {
 
   /* URL pública del sitio (con / al final). Se usa para generar los QR.
      Ejemplo GitHub Pages: 'https://tu-usuario.github.io/ruvu-encuesta/' */
-  SITE_URL: 'https://TODO-usuario.github.io/ruvu-encuesta/',
+  SITE_URL: 'https://nicojesi2026-collab.github.io/ruvu-encuesta/',
 
   /* PIN para entrar al contador (/contador.html) y al panel (/panel.html).
      IMPORTANTE: tiene que ser el mismo que pongas en apps-script/Code.gs. */
