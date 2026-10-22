@@ -6,42 +6,42 @@
   <meta name="theme-color" content="#0B0B0B">
   <meta name="robots" content="noindex">
   <title>RUVU · Panel</title>
-  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;600;800&family=Unbounded:wght@500;700;900&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/estilos.css">
   <style>
     .panel { max-width: 1100px; margin: 0 auto; padding: 16px 16px 48px; }
     .cab { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 12px; }
-    .cab h1 { font-size: 22px; margin: 0; }
+    .cab h1 { font-size: 22px; margin: 0; display: flex; align-items: baseline; gap: 10px; }
     .filtros { display: flex; flex-wrap: wrap; gap: 10px; align-items: flex-end; margin-bottom: 20px; }
-    .filtros label { display: flex; flex-direction: column; gap: 4px; font-size: 12px; color: var(--gris-texto); font-weight: 700; text-transform: uppercase; letter-spacing: .05em; }
+    .filtros label { display: flex; flex-direction: column; gap: 4px; font-size: 12px; color: var(--gris-plaza); font-weight: 700; text-transform: uppercase; letter-spacing: .05em; }
     .filtros input, .filtros select {
-      min-height: 44px; padding: 0 10px; border-radius: 10px; border: 1px solid var(--gris-2);
-      background: var(--gris-1); color: var(--ruvu-blanco); font: inherit; font-size: 15px; color-scheme: dark;
+      min-height: 44px; padding: 0 10px; border-radius: 10px; border: 1px solid var(--grafito);
+      background: var(--superficie); color: var(--ruvu-blanco); font: inherit; font-size: 15px; color-scheme: dark;
     }
     .filtros .btn { width: auto; min-height: 44px; padding: 8px 16px; font-size: 15px; }
-    .tarjeta { background: #121212; border: 1px solid var(--gris-2); border-radius: var(--radio); padding: 16px; margin-bottom: 16px; }
+    .tarjeta { background: var(--superficie); border: 1px solid var(--grafito); border-radius: var(--radio); padding: 16px; margin-bottom: 16px; }
     .tarjeta h2 { font-size: 17px; margin: 0 0 4px; }
-    .tarjeta .nota { font-size: 13px; color: var(--gris-texto); margin: 0 0 14px; }
+    .tarjeta .nota { font-size: 13px; color: var(--gris-plaza); margin: 0 0 14px; }
     .tabla-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
     table { border-collapse: collapse; width: 100%; font-size: 14px; min-width: 760px; }
-    th, td { padding: 8px 8px; text-align: right; border-bottom: 1px solid var(--gris-2); white-space: nowrap; }
-    th:first-child, td:first-child { text-align: left; position: sticky; left: 0; background: #121212; }
-    th { color: var(--gris-texto); font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .03em; }
-    td small { display: block; color: var(--gris-texto); font-size: 11px; font-weight: 500; }
-    tr.total td { font-weight: 800; border-top: 2px solid var(--gris-texto); }
-    tbody tr:hover td { background: #1b1b1b; }
+    th, td { padding: 8px 8px; text-align: right; border-bottom: 1px solid var(--grafito); white-space: nowrap; }
+    th:first-child, td:first-child { text-align: left; position: sticky; left: 0; background: var(--superficie); }
+    th { color: var(--gris-plaza); font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .03em; }
+    td small { display: block; color: var(--gris-plaza); font-size: 11px; font-weight: 500; }
+    tr.total td { font-family: var(--titulos); font-weight: 700; border-top: 2px solid var(--gris-plaza); }
+    tbody tr:hover td { background: var(--superficie-2); }
     .grilla { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 16px; }
     .grilla .tarjeta { margin: 0; }
     .barras { display: flex; flex-direction: column; gap: 8px; }
     .barra-fila { display: grid; grid-template-columns: minmax(90px, 38%) 1fr; gap: 10px; align-items: center; font-size: 14px; border-radius: 6px; }
-    .barra-fila:hover { background: #1b1b1b; }
+    .barra-fila:hover { background: var(--superficie-2); }
     .barra-fila .lbl { color: #E0E0E0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     .barra-fila .pista { position: relative; height: 22px; display: flex; align-items: center; gap: 8px; }
     .barra-fila .relleno { height: 14px; min-width: 2px; background: var(--ruvu-verde); border-radius: 0 4px 4px 0; }
-    .barra-fila .val { font-size: 13px; color: var(--gris-texto); white-space: nowrap; }
+    .barra-fila .val { font-size: 13px; color: var(--gris-plaza); white-space: nowrap; }
     .barra-fila .val b { color: var(--ruvu-blanco); }
     .embudo .barra-fila { grid-template-columns: minmax(120px, 34%) 1fr; }
-    .vacio { color: var(--gris-texto); font-size: 14px; }
+    .vacio { color: var(--gris-plaza); font-size: 14px; }
     .aviso { background: #2a2410; border: 1px solid #6b5a1a; color: #FFE7A3; padding: 12px 14px; border-radius: 12px; font-size: 14px; margin-bottom: 16px; }
     #tip { position: fixed; pointer-events: none; background: var(--ruvu-blanco); color: var(--ruvu-negro); font-size: 13px; font-weight: 700; padding: 6px 10px; border-radius: 8px; z-index: 20; box-shadow: 0 4px 16px rgba(0,0,0,.4); }
   </style>

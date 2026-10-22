@@ -6,28 +6,28 @@
   <meta name="theme-color" content="#0B0B0B">
   <meta name="robots" content="noindex">
   <title>RUVU · Contador</title>
-  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;600;800&family=Unbounded:wght@500;700;900&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/estilos.css">
   <style>
     .contador { gap: 12px; padding-top: 12px; }
     .cab { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
     select {
       width: 100%; min-height: 56px; padding: 0 14px; border-radius: var(--radio);
-      border: 2px solid var(--gris-2); background: var(--gris-1); color: var(--ruvu-blanco);
+      border: 2px solid var(--grafito); background: var(--superficie); color: var(--ruvu-blanco);
       font: inherit; font-weight: 700; font-size: 17px;
     }
     .tap {
       flex: 1; min-height: 28vh; border-radius: 24px; border: 0; cursor: pointer;
       display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px;
-      font: inherit; font-weight: 800; font-size: 26px; touch-action: manipulation; user-select: none;
+      font-family: var(--titulos); font-weight: 700; font-size: 22px; letter-spacing: -0.02em; touch-action: manipulation; user-select: none;
       transition: transform .06s ease, filter .1s ease;
     }
     .tap:active { transform: scale(.97); filter: brightness(1.15); }
-    .tap b { font-size: 56px; line-height: 1; }
-    .tap span { font-size: 14px; font-weight: 600; opacity: .8; }
+    .tap b { font-family: var(--titulos); font-weight: 900; font-size: 56px; line-height: 1; letter-spacing: -0.04em; }
+    .tap span { font-family: var(--fuente); font-size: 14px; font-weight: 700; opacity: .8; letter-spacing: 0; }
     .tap-pasa { background: var(--ruvu-blanco); color: var(--ruvu-negro); }
     .tap-frena { background: var(--ruvu-verde); color: var(--ruvu-negro); }
-    .estado { font-size: 13px; color: var(--gris-texto); text-align: center; min-height: 18px; }
+    .estado { font-size: 13px; color: var(--gris-plaza); text-align: center; min-height: 18px; }
     .estado.pend { color: #FFC857; }
     .flash { animation: flash .3s ease; }
     @keyframes flash { from { box-shadow: 0 0 0 8px rgba(255,255,255,.35); } to { box-shadow: 0 0 0 0 rgba(255,255,255,0); } }

@@ -5,32 +5,30 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="robots" content="noindex">
   <title>RUVU · Carteles para imprimir</title>
-  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@600;800&family=Unbounded:wght@900&display=swap" rel="stylesheet">
   <style>
     /* Carteles A5 (148 × 210 mm), uno por punto, pensados para imprimir en blanco y negro. */
     @page { size: A5 portrait; margin: 0; }
     * { box-sizing: border-box; }
-    body { margin: 0; background: #888; font-family: 'Montserrat', Arial, sans-serif; color: #000; }
+    body { margin: 0; background: #888; font-family: 'Manrope', Arial, sans-serif; color: #0B0B0B; }
     .ayuda { max-width: 148mm; margin: 16px auto; background: #fff; padding: 12px 16px; border-radius: 8px; font: 14px/1.4 system-ui, sans-serif; }
-    .ayuda button { font: inherit; font-weight: 700; padding: 10px 16px; border-radius: 8px; border: 0; background: #000; color: #fff; cursor: pointer; }
+    .ayuda button { font: inherit; font-weight: 700; padding: 10px 18px; border-radius: 28px; border: 0; background: #0B0B0B; color: #fff; cursor: pointer; }
     .hoja {
       width: 148mm; height: 210mm; margin: 16px auto; background: #fff; overflow: hidden;
       display: flex; flex-direction: column; align-items: center; text-align: center;
-      padding: 14mm 12mm 8mm; page-break-after: always; break-after: page;
+      padding: 15mm 12mm 9mm; page-break-after: always; break-after: page;
     }
-    .prox {
-      font-size: 13mm; font-weight: 800; letter-spacing: .06em; line-height: 1;
-      border: 1.2mm solid #000; padding: 3mm 5mm; margin: 0 0 7mm;
-    }
-    .logo { font-size: 24mm; font-weight: 800; line-height: .9; letter-spacing: .01em; margin: 0 0 5mm; }
-    .logo img { height: 22mm; width: auto; }
-    .texto { font-size: 7mm; font-weight: 700; line-height: 1.15; margin: 0 0 5mm; max-width: 110mm; }
+    /* Proporciones tomadas del "Cartel del pretotipo (A5)" de la identidad visual */
+    .prox { font-weight: 800; font-size: 6.5mm; letter-spacing: .3em; margin: 0 0 5mm; padding-left: .3em; }
+    .logo { font-family: 'Unbounded', 'Arial Black', sans-serif; font-size: 27mm; font-weight: 900; line-height: 1; letter-spacing: -0.03em; margin: 0 0 5mm; }
+    .logo img { height: 24mm; width: auto; }
+    .texto { font-size: 7.5mm; font-weight: 600; line-height: 1.25; margin: 0 0 6mm; max-width: 100mm; }
     .qr { width: 92mm; height: 92mm; display: flex; align-items: center; justify-content: center; }
     .qr img { width: 100%; height: 100%; image-rendering: pixelated; }
     .qr .falta { font: 14px system-ui, sans-serif; border: 2px dashed #000; padding: 12px; }
-    .flecha { font-size: 6mm; font-weight: 800; margin-top: 2mm; }
+    .flecha { font-size: 5mm; font-weight: 800; margin-top: 3mm; letter-spacing: .04em; }
     .empuje { flex: 1; }
-    .nombre { font-size: 3mm; font-weight: 700; color: #000; letter-spacing: .05em; text-transform: uppercase; }
+    .nombre { font-size: 3.2mm; font-weight: 600; color: #4A5154; letter-spacing: .04em; }
     @media print {
       body { background: #fff; }
       .ayuda { display: none; }
@@ -62,7 +60,7 @@
           '<p class="texto">Escaneá para saber cuánto tardarías</p>' +
           '<div class="qr"><img src="qr/' + encodeURIComponent(p.slug) + '.svg" alt="QR ' + esc(p.nombre) + '" ' +
           'onerror="this.parentNode.innerHTML=\'<span class=falta>Falta el QR: corré <b>npm run qr</b></span>\'"></div>' +
-          '<div class="flecha">▲ Abrí la cámara del celu ▲</div>' +
+          '<div class="flecha">Abrí la cámara del celu y apuntá al QR</div>' +
           '<div class="empuje"></div>' +
           '<div class="nombre">' + esc(p.nombre) + ' · ' + esc(p.slug) + '</div>' +
           '</section>';

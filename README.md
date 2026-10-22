@@ -91,12 +91,22 @@ Todo en **`config.js`** (está comentado línea por línea):
 - **Ofertas** (`OFERTAS`): pack, abono, % de horario valle y opciones de precio máximo.
 - **PIN**: en `config.js` **y** en `Code.gs` (tienen que coincidir).
 
+**Diseño**: sigue la identidad visual "RUVU — Identidad visual / Marca 2.0":
+- Tipografías: **Unbounded** (logo, títulos, precios, código), **Manrope** (textos) y **Permanent Marker** solo para las frases tipo grafiti ("Atajá por la diagonal", "Llegá antes, quedate más."). Se cargan de Google Fonts; Permanent Marker se baja recortada a esas letras.
+- Logo "RUVU." en Unbounded 900 con el punto verde, trama platense (cuadrícula + diagonales + plaza) en la pantalla de inicio y el búho en las pantallas finales.
+- Violeta y magenta son decoración: nunca en botones ni en textos importantes.
+
 **Colores**: arriba de todo en `css/estilos.css`:
 ```css
---ruvu-verde: #19C37D;   /* TODO: reemplazar por el verde exacto de la marca */
---ruvu-negro: #0B0B0B;
+--ruvu-verde: #12E39A;   /* Verde RUVU */
+--ruvu-negro: #0B0B0B;   /* Negro asfalto */
 --ruvu-blanco: #FFFFFF;
+--grafito: #2B2F31;
+--gris-plaza: #A6ADB0;
+--violeta: #6B2BD9;      /* Violeta Diagonal (solo decoración) */
+--magenta: #FF3D9A;      /* Magenta Plaza (solo decoración) */
 ```
+(El búho y la trama tienen los colores escritos en `js/encuesta.js`, funciones `buho()` y `trama()`.)
 
 **Logo**: si ponés `assets/logo-ruvu.svg` (versión clara, para fondo negro) se usa en la encuesta en lugar del texto "RUVU.". Para los carteles impresos poné además `assets/logo-ruvu-negro.svg` (versión negra).
 
@@ -154,7 +164,7 @@ npm run capturas   # regenera /capturas (360 px y 320 px) y el PDF de carteles
 ## Pendientes (TODO)
 
 - [ ] Coordenadas exactas de puntos y destinos (`config.js`).
-- [ ] Verde exacto de la marca (`css/estilos.css`) y logo SVG en `assets/`.
+- [ ] (Opcional) Logo SVG en `assets/` si querés reemplazar el wordmark de texto.
 - [ ] `SITE_URL` real → `npm run qr` → imprimir carteles.
 - [ ] Email de contacto y razón social en `privacidad.html`.
 - [ ] Cambiar el PIN `2026` (en `config.js` y `Code.gs`).

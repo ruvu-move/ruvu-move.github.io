@@ -63,6 +63,27 @@
     });
   }
 
+  /* Trama platense: cuadrícula de La Plata con diagonales y plaza central */
+  function trama() {
+    return '<svg class="trama" viewBox="0 0 600 600" preserveAspectRatio="xMidYMid slice" aria-hidden="true">' +
+      '<path d="M50 0V600M100 0V600M150 0V600M200 0V600M250 0V600M300 0V600M350 0V600M400 0V600M450 0V600M500 0V600M550 0V600M0 50H600M0 100H600M0 150H600M0 200H600M0 250H600M0 300H600M0 350H600M0 400H600M0 450H600M0 500H600M0 550H600" stroke="#6B2BD9" stroke-width="2"/>' +
+      '<path d="M0 0L600 600M600 0L0 600M300 0L600 300L300 600L0 300Z" fill="none" stroke="#12E39A" stroke-width="7"/>' +
+      '<circle cx="300" cy="300" r="24" fill="#FF3D9A"/></svg>';
+  }
+
+  /* Búho RUVU arriba del monopatín (ojos de rueda, panza con la trama) */
+  function buho() {
+    return '<svg class="buho" viewBox="0 0 200 236" role="img" aria-label="Búho RUVU arriba de un monopatín">' +
+      '<path d="M40 78 Q40 40 66 32 L56 6 L92 28 Q100 26 108 28 L144 6 L134 32 Q160 40 160 78 L160 150 Q160 205 100 208 Q40 205 40 150 Z" fill="#6B2BD9"/>' +
+      '<circle cx="72" cy="88" r="28" fill="#0B0B0B"/><circle cx="72" cy="88" r="19" fill="#2B2F31"/><circle cx="72" cy="88" r="9" fill="#12E39A"/>' +
+      '<circle cx="128" cy="88" r="28" fill="#0B0B0B"/><circle cx="128" cy="88" r="19" fill="#2B2F31"/><circle cx="128" cy="88" r="9" fill="#12E39A"/>' +
+      '<path d="M92 118 L108 118 L100 134 Z" fill="#FF3D9A"/>' +
+      '<path d="M70 150H130M70 170H130M85 140V195M115 140V195M68 140L132 198M132 140L68 198" stroke="#12E39A" stroke-width="3"/>' +
+      '<rect x="78" y="202" width="14" height="10" rx="3" fill="#12E39A"/><rect x="108" y="202" width="14" height="10" rx="3" fill="#12E39A"/>' +
+      '<rect x="24" y="212" width="152" height="10" rx="5" fill="#FFFFFF"/>' +
+      '<circle cx="40" cy="226" r="9" fill="#FFFFFF"/><circle cx="160" cy="226" r="9" fill="#FFFFFF"/></svg>';
+  }
+
   function opciones(lista) {
     return '<div class="opciones">' + lista.map(function (o) {
       return '<button type="button" class="btn btn-opcion" data-v="' + esc(o[0]) + '">' + o[1] + '</button>';
@@ -75,12 +96,14 @@
 
   P.inicio = {
     html: function () {
-      return '<div class="pantalla-in inicio-in">' + logo() +
+      return '<div>' + logo() + '<br>' +
         '<span class="proximamente">Próximamente en La Plata</span>' +
         '<h1>¿Cuánto tardarías en llegar con RUVU?</h1>' +
-        '<p class="sub">Te lo calculamos en 1 minuto.</p></div>' +
-        '<div class="empuje"></div><div class="abajo">' +
-        '<button type="button" class="btn btn-verde" id="empezar">Empezar</button></div>';
+        '<p class="sub">Te lo calculamos en 1 minuto.</p>' +
+        '<span class="tag">Atajá por la diagonal</span></div>' +
+        '<div class="empuje empuje-trama">' + trama() + '</div><div class="abajo">' +
+        '<button type="button" class="btn btn-verde" id="empezar">Empezar</button>' +
+        '<p class="lema">Escaneá. Andá. <b>Dejalo.</b></p></div>';
     },
     clase: 'inicio',
     montar: function () {
@@ -116,8 +139,8 @@
     p: 0.2,
     html: function () {
       return '<h2>¿Cómo ibas a ir?</h2>' + opciones([
-        ['caminando', '🚶 Caminando'], ['micro', '🚌 Micro'], ['bici', '🚲 Bici'],
-        ['uber_remis', '🚕 Uber o remis'], ['auto', '🚗 Auto'], ['moto', '🏍️ Moto']
+        ['caminando', 'Caminando'], ['micro', 'Micro'], ['bici', 'Bici'],
+        ['uber_remis', 'Uber o remis'], ['auto', 'Auto'], ['moto', 'Moto']
       ]);
     },
     elegir: function (v) { guardar({ modo_actual: v }, 'frecuencia'); ir('frecuencia'); }
@@ -137,8 +160,8 @@
     p: 0.4,
     html: function () {
       return '<div class="comparar">' +
-        '<div><b class="verde">' + r.min_monopatin + ' min</b><span>con RUVU 🛴</span></div>' +
-        '<div><b>' + r.min_caminando + ' min</b><span>caminando 🚶</span></div></div>' +
+        '<div><b class="verde">' + r.min_monopatin + ' min</b><span>con RUVU</span></div>' +
+        '<div><b>' + r.min_caminando + ' min</b><span>caminando</span></div></div>' +
         '<h2>Con RUVU llegás en ' + r.min_monopatin + ' min en vez de ' + r.min_caminando +
         ' caminando. ¿Lo usarías en vez de caminar?</h2>' +
         opciones([['si', 'Sí, de una'], ['no', 'No'], ['depende', 'Depende del precio']]);
@@ -330,10 +353,10 @@
 
   function htmlCodigo(titulo, codigo) {
     var msg = C.MENSAJE_INVITACION.replace('{link}', linkInvitacion(codigo));
-    return '<div class="emoji-grande">🛴</div><h1>' + titulo + '</h1>' +
+    return buho() + '<span class="tag">Llegá antes, quedate más.</span><h1>' + titulo + '</h1>' +
       '<p class="sub" style="margin-bottom:0">Tu viaje gratis:</p>' +
       '<div class="codigo" id="codigo">' + esc(codigo) + '</div>' +
-      '<p class="chica">Válido para 1 viaje de hasta 10 min en el lanzamiento.<br>Sacale captura a esta pantalla 📸</p>' +
+      '<p class="chica">Válido para 1 viaje de hasta 10 min en el lanzamiento.<br>Sacale captura a esta pantalla.</p>' +
       '<div class="abajo"><a class="btn btn-verde" id="invitar" target="_blank" rel="noopener" href="https://wa.me/?text=' +
       encodeURIComponent(msg) + '">Invitá a un amigo y sumás otro viaje</a></div>';
   }
@@ -352,7 +375,7 @@
   P.fin_sin_whatsapp = {
     clase: 'final',
     html: function () {
-      return '<div class="emoji-grande">🙌</div><h1>¡Gracias por responder!</h1>' +
+      return buho() + '<h1>¡Gracias por responder!</h1>' +
         '<p class="sub">Muy pronto vas a ver los monopatines RUVU por La Plata.</p>' +
         '<div class="abajo"><button type="button" class="btn btn-texto" id="cambie">Cambié de idea, quiero mi viaje gratis</button></div>';
     },
@@ -364,7 +387,7 @@
   P.fin_menor = {
     clase: 'final',
     html: function () {
-      return '<div class="emoji-grande">💚</div><h1>¡Gracias!</h1>' +
+      return buho() + '<h1>¡Gracias!</h1>' +
         '<p class="sub">RUVU es para mayores de 18. ¡Gracias por la buena onda!</p>';
     }
   };
@@ -372,8 +395,8 @@
   P.ya_participo = {
     clase: 'final',
     html: function () {
-      if (participacion && participacion.codigo) return htmlCodigo('Ya participaste 🙌', participacion.codigo);
-      return '<div class="emoji-grande">🙌</div><h1>Ya participaste, ¡gracias!</h1>' +
+      if (participacion && participacion.codigo) return htmlCodigo('Ya participaste', participacion.codigo);
+      return buho() + '<h1>Ya participaste, ¡gracias!</h1>' +
         '<p class="sub">Muy pronto vas a ver los monopatines RUVU por La Plata.</p>';
     },
     montar: montarInvitar
