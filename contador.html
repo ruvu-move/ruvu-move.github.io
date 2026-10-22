@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="es-AR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#0B0B0B">
+  <meta name="robots" content="noindex">
+  <title>RUVU · Contador</title>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/estilos.css">
+  <style>
+    .contador { gap: 12px; padding-top: 12px; }
+    .cab { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+    select {
+      width: 100%; min-height: 56px; padding: 0 14px; border-radius: var(--radio);
+      border: 2px solid var(--gris-2); background: var(--gris-1); color: var(--ruvu-blanco);
+      font: inherit; font-weight: 700; font-size: 17px;
+    }
+    .tap {
+      flex: 1; min-height: 28vh; border-radius: 24px; border: 0; cursor: pointer;
+      display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px;
+      font: inherit; font-weight: 800; font-size: 26px; touch-action: manipulation; user-select: none;
+      transition: transform .06s ease, filter .1s ease;
+    }
+    .tap:active { transform: scale(.97); filter: brightness(1.15); }
+    .tap b { font-size: 56px; line-height: 1; }
+    .tap span { font-size: 14px; font-weight: 600; opacity: .8; }
+    .tap-pasa { background: var(--ruvu-blanco); color: var(--ruvu-negro); }
+    .tap-frena { background: var(--ruvu-verde); color: var(--ruvu-negro); }
+    .estado { font-size: 13px; color: var(--gris-texto); text-align: center; min-height: 18px; }
+    .estado.pend { color: #FFC857; }
+    .flash { animation: flash .3s ease; }
+    @keyframes flash { from { box-shadow: 0 0 0 8px rgba(255,255,255,.35); } to { box-shadow: 0 0 0 0 rgba(255,255,255,0); } }
+  </style>
+</head>
+<body>
+  <div class="pin" id="pin" hidden>
+    <form>
+      <span class="logo chico">RUVU<span class="punto-logo">.</span></span>
+      <h2>Contador del equipo</h2>
+      <input type="password" inputmode="numeric" autocomplete="off" placeholder="PIN" aria-label="PIN">
+      <p class="error pin-error" hidden>PIN incorrecto</p>
+      <button class="btn btn-verde" type="submit">Entrar</button>
+    </form>
+  </div>
+
+  <main class="app contador" id="app" hidden>
+    <div class="cab">
+      <span class="logo chico">RUVU<span class="punto-logo">.</span></span>
+      <a href="panel.html" class="chica">Panel →</a>
+    </div>
+    <label class="etiqueta" for="punto" style="margin:0">Punto</label>
+    <select id="punto"></select>
+    <button class="tap tap-pasa" id="pasa" type="button">+1 Pasa<b id="n-pasa">0</b><span>pasó y no miró</span></button>
+    <button class="tap tap-frena" id="frena" type="button">+1 Se frena a mirar<b id="n-frena">0</b><span>ya cuenta como "pasa"</span></button>
+    <button class="btn btn-texto" id="deshacer" type="button">↶ Deshacer último</button>
+    <p class="estado" id="estado" aria-live="polite"></p>
+    <p class="chica" style="text-align:center;margin:0">Contadores de hoy en este celular, para este punto.</p>
+  </main>
+
+  <script src="config.js"></script>
+  <script src="js/comun.js"></script>
+  <script src="js/contador.js"></script>
+</body>
+</html>

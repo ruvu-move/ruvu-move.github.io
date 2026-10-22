@@ -1,0 +1,16 @@
+{
+  "name": "ruvu-encuesta",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Encuesta pretotipo RUVU (monopatines compartidos, La Plata)",
+  "scripts": {
+    "qr": "node scripts/generar-qr.js",
+    "dev": "node tests/servidor-local.js",
+    "test": "node tests/simular-sesiones.js",
+    "capturas": "node tests/capturas.js"
+  },
+  "devDependencies": {
+    "playwright": "1.56.1",
+    "qrcode": "1.5.4"
+  }
+}

@@ -1,0 +1,283 @@
+/* ==========================================================================
+   RUVU · estilos compartidos
+   COLORES DE MARCA: cambialos acá y se actualizan en todo el sitio.
+   ========================================================================== */
+:root {
+  --ruvu-verde: #19C37D;   /* TODO: provisorio, reemplazar por el verde exacto de la marca */
+  --ruvu-negro: #0B0B0B;
+  --ruvu-blanco: #FFFFFF;
+
+  --verde-oscuro: color-mix(in srgb, var(--ruvu-verde) 18%, var(--ruvu-negro));
+  --gris-1: #1A1A1A;       /* fondo de botones secundarios / tarjetas */
+  --gris-2: #2A2A2A;       /* bordes */
+  --gris-texto: #B5B5B5;   /* texto secundario (contraste AA sobre negro: 9.6:1) */
+  --rojo: #FF6B6B;
+
+  --radio: 16px;
+  --fuente: 'Montserrat', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0;
+  min-height: 100vh;
+  min-height: 100dvh;
+  background: var(--ruvu-negro);
+  color: var(--ruvu-blanco);
+  font-family: var(--fuente);
+  font-weight: 500;
+  font-size: 17px;
+  line-height: 1.4;
+  -webkit-tap-highlight-color: transparent;
+}
+a { color: var(--ruvu-verde); }
+[hidden] { display: none !important; }
+
+/* ---------- Wordmark / logo ---------- */
+.logo {
+  display: inline-flex;
+  align-items: center;
+  gap: .12em;
+  font-weight: 800;
+  letter-spacing: .02em;
+  font-size: 56px;
+  line-height: 1;
+  color: var(--ruvu-blanco);
+}
+.logo img { height: 1em; width: auto; display: block; }
+.logo .punto-logo { color: var(--ruvu-verde); }
+.logo.chico { font-size: 22px; }
+
+/* ---------- Estructura de pantalla ---------- */
+.app {
+  max-width: 480px;
+  margin: 0 auto;
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  padding: 0 16px calc(16px + env(safe-area-inset-bottom));
+}
+.barra {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background: var(--ruvu-negro);
+  padding: 12px 0 8px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 56px;
+}
+.volver {
+  flex: none;
+  width: 44px; height: 44px;
+  border-radius: 50%;
+  border: 1px solid var(--gris-2);
+  background: transparent;
+  color: var(--ruvu-blanco);
+  font: inherit;
+  font-size: 22px;
+  cursor: pointer;
+}
+.volver:focus-visible { outline: 3px solid var(--ruvu-verde); outline-offset: 2px; }
+.progreso {
+  flex: 1;
+  height: 8px;
+  border-radius: 99px;
+  background: var(--gris-1);
+  overflow: hidden;
+}
+.progreso > i {
+  display: block;
+  height: 100%;
+  width: 0;
+  background: var(--ruvu-verde);
+  border-radius: 99px;
+  transition: width .35s ease;
+}
+
+.pantalla {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding-top: 8px;
+}
+.pantalla.entra { animation: entra .32s cubic-bezier(.2,.7,.3,1); }
+.pantalla.entra-atras { animation: entra-atras .32s cubic-bezier(.2,.7,.3,1); }
+@keyframes entra { from { opacity: 0; transform: translateX(28px); } to { opacity: 1; transform: none; } }
+@keyframes entra-atras { from { opacity: 0; transform: translateX(-28px); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) {
+  .pantalla.entra, .pantalla.entra-atras { animation: none; }
+  .progreso > i { transition: none; }
+}
+
+h1, h2 { font-weight: 800; margin: 0 0 12px; line-height: 1.15; letter-spacing: -.01em; }
+h1 { font-size: 30px; }
+h2 { font-size: 26px; }
+.sub { color: var(--gris-texto); margin: 0 0 20px; font-size: 16px; }
+.verde { color: var(--ruvu-verde); }
+.chica { font-size: 13px; color: var(--gris-texto); }
+
+/* ---------- Botones ---------- */
+.opciones { display: flex; flex-direction: column; gap: 10px; margin-top: 8px; }
+.btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  min-height: 56px;
+  padding: 14px 18px;
+  border-radius: var(--radio);
+  border: 2px solid transparent;
+  font: inherit;
+  font-weight: 700;
+  font-size: 17px;
+  text-align: center;
+  text-decoration: none;
+  cursor: pointer;
+  transition: transform .08s ease, background-color .15s ease, border-color .15s ease;
+  touch-action: manipulation;
+}
+.btn:active { transform: scale(.98); }
+.btn:focus-visible { outline: 3px solid var(--ruvu-blanco); outline-offset: 2px; }
+.btn[disabled] { opacity: .45; cursor: not-allowed; }
+
+.btn-verde { background: var(--ruvu-verde); color: var(--ruvu-negro); }
+.btn-opcion {
+  background: var(--gris-1);
+  color: var(--ruvu-blanco);
+  border-color: var(--gris-2);
+  justify-content: flex-start;
+  text-align: left;
+}
+.btn-opcion small { display: block; font-weight: 500; color: var(--gris-texto); font-size: 14px; margin-top: 2px; }
+.btn-opcion.elegida { border-color: var(--ruvu-verde); background: var(--verde-oscuro); }
+.btn-texto {
+  background: transparent;
+  color: var(--gris-texto);
+  border-color: var(--gris-2);
+  font-weight: 600;
+}
+
+.empuje { flex: 1; min-height: 16px; }
+.abajo { display: flex; flex-direction: column; gap: 10px; padding-top: 16px; }
+
+/* ---------- Chips (día / franja) ---------- */
+.chips { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 20px; }
+.chips.cinco { grid-template-columns: repeat(3, 1fr); }
+.chip {
+  min-height: 56px;
+  border-radius: 12px;
+  border: 2px solid var(--gris-2);
+  background: var(--gris-1);
+  color: var(--ruvu-blanco);
+  font: inherit;
+  font-weight: 700;
+  font-size: 15px;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+.chip[aria-pressed="true"] { border-color: var(--ruvu-verde); background: var(--ruvu-verde); color: var(--ruvu-negro); }
+.etiqueta { font-weight: 700; margin: 0 0 8px; font-size: 15px; color: var(--gris-texto); text-transform: uppercase; letter-spacing: .06em; }
+
+/* ---------- Inicio ---------- */
+.inicio { justify-content: center; text-align: left; }
+.inicio .proximamente {
+  display: inline-block;
+  align-self: flex-start;
+  background: var(--ruvu-verde);
+  color: var(--ruvu-negro);
+  font-weight: 800;
+  font-size: 13px;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  padding: 6px 10px;
+  border-radius: 8px;
+  margin: 20px 0 14px;
+}
+.inicio h1 { font-size: 32px; }
+
+/* ---------- Comparación de tiempos ---------- */
+.comparar { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 4px 0 20px; }
+.comparar div { background: var(--gris-1); border: 1px solid var(--gris-2); border-radius: var(--radio); padding: 14px; }
+.comparar div:first-child { border-color: var(--ruvu-verde); }
+.comparar b { display: block; font-size: 34px; font-weight: 800; line-height: 1; }
+.comparar span { font-size: 14px; color: var(--gris-texto); }
+.precio-grande { font-size: 52px; font-weight: 800; color: var(--ruvu-verde); line-height: 1; margin: 4px 0 8px; }
+
+/* ---------- Formulario ---------- */
+.campo label { display: block; font-weight: 700; margin-bottom: 8px; }
+.campo input[type="tel"], .pin input {
+  width: 100%;
+  min-height: 60px;
+  padding: 12px 16px;
+  border-radius: var(--radio);
+  border: 2px solid var(--gris-2);
+  background: var(--gris-1);
+  color: var(--ruvu-blanco);
+  font: inherit;
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: .03em;
+}
+.campo input:focus, .pin input:focus { outline: none; border-color: var(--ruvu-verde); }
+.campo.con-error input { border-color: var(--rojo); }
+.error { color: var(--rojo); font-size: 14px; margin: 8px 0 0; }
+.check {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  margin: 18px 0 4px;
+  font-size: 14px;
+  color: var(--gris-texto);
+  cursor: pointer;
+}
+.check input { flex: none; width: 26px; height: 26px; margin: 0; accent-color: var(--ruvu-verde); }
+
+/* ---------- Final ---------- */
+.final { text-align: center; justify-content: center; }
+.codigo {
+  margin: 12px 0 8px;
+  padding: 18px 12px;
+  border: 3px dashed var(--ruvu-verde);
+  border-radius: var(--radio);
+  font-size: 40px;
+  font-weight: 800;
+  letter-spacing: .06em;
+  color: var(--ruvu-verde);
+  user-select: all;
+}
+.emoji-grande { font-size: 56px; line-height: 1; margin-bottom: 12px; }
+
+/* ---------- PIN (contador / panel) ---------- */
+.pin {
+  position: fixed; inset: 0; z-index: 10;
+  background: var(--ruvu-negro);
+  display: flex; align-items: center; justify-content: center;
+  padding: 16px;
+}
+.pin form { width: 100%; max-width: 320px; display: flex; flex-direction: column; gap: 12px; text-align: center; }
+.pin input { text-align: center; letter-spacing: .3em; }
+
+/* ---------- Texto legal ---------- */
+.legal { max-width: 640px; margin: 0 auto; padding: 24px 16px 48px; }
+.legal h1 { font-size: 26px; margin-top: 20px; }
+.legal h2 { font-size: 18px; margin-top: 24px; }
+.legal p, .legal li { color: #E0E0E0; }
+
+@media (max-width: 340px) {
+  h1 { font-size: 26px; }
+  h2 { font-size: 23px; }
+  .inicio h1 { font-size: 28px; }
+  .codigo { font-size: 34px; }
+  .comparar b { font-size: 30px; }
+  .precio-grande { font-size: 46px; }
+}
+
+/* Ajustes */
+h1:focus, h2:focus { outline: none; }
+.btn-opcion { flex-direction: column; align-items: flex-start; justify-content: center; gap: 0; }
+.inicio { padding-top: 32px; }

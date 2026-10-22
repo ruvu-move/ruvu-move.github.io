@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="es-AR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#0B0B0B">
+  <meta name="robots" content="noindex">
+  <title>RUVU · Panel</title>
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/estilos.css">
+  <style>
+    .panel { max-width: 1100px; margin: 0 auto; padding: 16px 16px 48px; }
+    .cab { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 12px; }
+    .cab h1 { font-size: 22px; margin: 0; }
+    .filtros { display: flex; flex-wrap: wrap; gap: 10px; align-items: flex-end; margin-bottom: 20px; }
+    .filtros label { display: flex; flex-direction: column; gap: 4px; font-size: 12px; color: var(--gris-texto); font-weight: 700; text-transform: uppercase; letter-spacing: .05em; }
+    .filtros input, .filtros select {
+      min-height: 44px; padding: 0 10px; border-radius: 10px; border: 1px solid var(--gris-2);
+      background: var(--gris-1); color: var(--ruvu-blanco); font: inherit; font-size: 15px; color-scheme: dark;
+    }
+    .filtros .btn { width: auto; min-height: 44px; padding: 8px 16px; font-size: 15px; }
+    .tarjeta { background: #121212; border: 1px solid var(--gris-2); border-radius: var(--radio); padding: 16px; margin-bottom: 16px; }
+    .tarjeta h2 { font-size: 17px; margin: 0 0 4px; }
+    .tarjeta .nota { font-size: 13px; color: var(--gris-texto); margin: 0 0 14px; }
+    .tabla-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    table { border-collapse: collapse; width: 100%; font-size: 14px; min-width: 760px; }
+    th, td { padding: 8px 8px; text-align: right; border-bottom: 1px solid var(--gris-2); white-space: nowrap; }
+    th:first-child, td:first-child { text-align: left; position: sticky; left: 0; background: #121212; }
+    th { color: var(--gris-texto); font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: .03em; }
+    td small { display: block; color: var(--gris-texto); font-size: 11px; font-weight: 500; }
+    tr.total td { font-weight: 800; border-top: 2px solid var(--gris-texto); }
+    tbody tr:hover td { background: #1b1b1b; }
+    .grilla { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 16px; }
+    .grilla .tarjeta { margin: 0; }
+    .barras { display: flex; flex-direction: column; gap: 8px; }
+    .barra-fila { display: grid; grid-template-columns: minmax(90px, 38%) 1fr; gap: 10px; align-items: center; font-size: 14px; border-radius: 6px; }
+    .barra-fila:hover { background: #1b1b1b; }
+    .barra-fila .lbl { color: #E0E0E0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .barra-fila .pista { position: relative; height: 22px; display: flex; align-items: center; gap: 8px; }
+    .barra-fila .relleno { height: 14px; min-width: 2px; background: var(--ruvu-verde); border-radius: 0 4px 4px 0; }
+    .barra-fila .val { font-size: 13px; color: var(--gris-texto); white-space: nowrap; }
+    .barra-fila .val b { color: var(--ruvu-blanco); }
+    .embudo .barra-fila { grid-template-columns: minmax(120px, 34%) 1fr; }
+    .vacio { color: var(--gris-texto); font-size: 14px; }
+    .aviso { background: #2a2410; border: 1px solid #6b5a1a; color: #FFE7A3; padding: 12px 14px; border-radius: 12px; font-size: 14px; margin-bottom: 16px; }
+    #tip { position: fixed; pointer-events: none; background: var(--ruvu-blanco); color: var(--ruvu-negro); font-size: 13px; font-weight: 700; padding: 6px 10px; border-radius: 8px; z-index: 20; box-shadow: 0 4px 16px rgba(0,0,0,.4); }
+  </style>
+</head>
+<body>
+  <div class="pin" id="pin" hidden>
+    <form>
+      <span class="logo chico">RUVU<span class="punto-logo">.</span></span>
+      <h2>Panel del pretotipo</h2>
+      <input type="password" inputmode="numeric" autocomplete="off" placeholder="PIN" aria-label="PIN">
+      <p class="error pin-error" hidden>PIN incorrecto</p>
+      <button class="btn btn-verde" type="submit">Entrar</button>
+    </form>
+  </div>
+
+  <main class="panel" id="app" hidden>
+    <div class="cab">
+      <h1><span class="logo chico">RUVU<span class="punto-logo">.</span></span> Panel</h1>
+      <a href="contador.html" class="chica">Contador →</a>
+    </div>
+    <div class="filtros">
+      <label>Desde<input type="date" id="desde"></label>
+      <label>Hasta<input type="date" id="hasta"></label>
+      <label>Ver punto<select id="sel-punto"></select></label>
+      <button class="btn btn-verde" id="actualizar" type="button">Actualizar</button>
+      <button class="btn btn-texto" id="csv" type="button">Exportar CSV</button>
+    </div>
+    <div id="aviso"></div>
+
+    <section class="tarjeta">
+      <h2>Embudo por punto</h2>
+      <p class="nota">Solo gente que llegó por el QR del punto. Debajo de cada número, el % respecto del paso anterior, salvo: <b>Acepta el precio</b> sobre los que dijeron "sí" o "depende" (los únicos que ven el precio) y <b>Dejan WhatsApp</b> sobre los que empezaron (se le pide a todos). "Pasan" incluye a los que se frenan.</p>
+      <div class="tabla-wrap"><table id="tabla-embudo"></table></div>
+    </section>
+
+    <div class="grilla">
+      <section class="tarjeta embudo">
+        <h2 id="titulo-embudo">Embudo</h2>
+        <p class="nota">% respecto del paso anterior (ver nota de la tabla)</p>
+        <div class="barras" id="embudo"></div>
+      </section>
+      <section class="tarjeta">
+        <h2>Abandono por paso</h2>
+        <p class="nota">Pantalla en la que quedaron quienes no terminaron</p>
+        <div class="barras" id="abandono"></div>
+      </section>
+      <section class="tarjeta">
+        <h2>Referidos (link de amigo)</h2>
+        <p class="nota">Gente que entró por el link de invitación</p>
+        <div class="barras" id="referidos"></div>
+      </section>
+    </div>
+    <h2 style="font-size:19px;margin:24px 0 12px">Respuestas</h2>
+    <div class="grilla" id="distribuciones"></div>
+    <p class="chica" id="generado" style="margin-top:20px"></p>
+  </main>
+  <div id="tip" hidden></div>
+
+  <script src="config.js"></script>
+  <script src="js/comun.js"></script>
+  <script src="js/panel.js"></script>
+</body>
+</html>
