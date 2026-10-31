@@ -15,7 +15,7 @@ css/estilos.css     Estilos (colores de marca arriba de todo)
 js/                 Lógica (comun.js, encuesta.js, contador.js, panel.js)
 apps-script/Code.gs Backend para pegar en Google Apps Script
 scripts/generar-qr.js  Genera los QR (npm run qr)
-qr/                 QR generados (PNG + SVG por punto)
+qr/                 QR general (PNG + SVG): uno solo para todas las ubicaciones
 tests/              Servidor local, simulación de 20 sesiones y capturas
 capturas/           Capturas mobile de cada pantalla + carteles-A5.pdf
 ```
@@ -153,14 +153,14 @@ npm install
 npm run qr
 ```
 
-Genera en `/qr/` un `<slug>.png` (1200 px) y un `<slug>.svg` por punto, más **`general.png/.svg`** (QR sin punto, sirve en cualquier lugar: la persona escribe su parada), negro sobre blanco, con margen y corrección de errores media. Cada QR apunta a `SITE_URL?p=<slug>`. Si `SITE_URL` todavía dice TODO te avisa.
+Genera en `/qr/` **un solo QR**, `general.png` (1200 px) y `general.svg`, que apunta a `SITE_URL` y sirve para todas las ubicaciones: la persona escribe en qué parada está. Negro sobre blanco, con margen y corrección de errores media. (Los links `SITE_URL?p=<slug>` de `PUNTOS` siguen funcionando si algún día querés un QR por punto.)
 
 Después subí la carpeta `qr/` a GitHub junto con lo demás y abrí **`carteles.html`** (en tu sitio o local):
 - una hoja A5 por punto: PRÓXIMAMENTE · logo · "Escaneá para saber cuánto tardarías" · QR grande · nombre del punto chiquito abajo;
 - imprimí con tamaño **A5**, márgenes **ninguno**, escala **100%** (en una hoja A4 podés elegir "2 páginas por hoja");
 - está pensado en blanco y negro puro. Probá escanear uno impreso antes de salir.
 
-El PDF listo para imprimir está en `capturas/carteles-A5.pdf` (y una copia en `qr/carteles-A5.pdf`), con la dirección real.
+El PDF listo para imprimir (1 cartel A5 con el QR único) está en `qr/carteles-A5.pdf` y en `capturas/carteles-A5.pdf`.
 
 ---
 
@@ -194,3 +194,7 @@ npm run capturas   # regenera /capturas (360 px y 320 px) y el PDF de carteles
 - [ ] `SITE_URL` real → `npm run qr` → imprimir carteles.
 - [ ] Email de contacto y razón social en `privacidad.html`.
 - [ ] Cambiar el PIN `2026` (en `config.js` y `Code.gs`).
+
+## Búho RUVU
+
+La mascota aparece animada a mitad de la encuesta (pantalla de edad) con un globo de texto, para que la persona siga respondiendo. Archivos: `assets/buho.webp` (animado, con transparencia), `assets/buho.gif` (respaldo) y `assets/buho.png` (fijo). Para cambiar el texto, buscá `buho(` en `js/encuesta.js`.

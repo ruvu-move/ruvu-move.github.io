@@ -7,7 +7,7 @@
   <title>RUVU · Carteles para imprimir</title>
   <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@600;800&family=Unbounded:wght@900&display=swap" rel="stylesheet">
   <style>
-    /* Carteles A5 (148 × 210 mm), uno por punto, pensados para imprimir en blanco y negro. */
+    /* Cartel A5 (148 × 210 mm) con el QR general, pensados para imprimir en blanco y negro. */
     @page { size: A5 portrait; margin: 0; }
     * { box-sizing: border-box; }
     body { margin: 0; background: #888; font-family: 'Manrope', Arial, sans-serif; color: #0B0B0B; }
@@ -41,7 +41,7 @@
 </head>
 <body>
   <div class="ayuda">
-    <b>Carteles A5.</b> El primero es el <b>QR general</b> (sirve en cualquier lugar: la persona escribe su parada); después, uno por punto. Antes de imprimir: poné la URL real en <code>SITE_URL</code> de config.js y corré <code>npm run qr</code>.
+    <b>Cartel A5 con un solo QR</b> para todas las ubicaciones: la persona escribe en qué parada está. Imprimí las copias que necesites.
     En el diálogo de impresión elegí tamaño <b>A5</b>, márgenes <b>ninguno</b> y escala <b>100%</b>.
     Probá escanear un cartel impreso antes de llevarlo a la calle.<br><br>
     <button type="button" onclick="window.print()">Imprimir</button>
@@ -53,7 +53,7 @@
     (function () {
       var C = window.RUVU_CONFIG;
       function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
-      var hojas = [{ slug: 'general', nombre: 'QR general' }].concat(C.PUNTOS);
+      var hojas = [{ slug: 'general', nombre: 'QR general' }]; // un solo QR para todas las ubicaciones
       document.getElementById('hojas').innerHTML = hojas.map(function (p) {
         return '<section class="hoja">' +
           '<div class="prox">PRÓXIMAMENTE</div>' +
@@ -63,7 +63,7 @@
           'onerror="this.parentNode.innerHTML=\'<span class=falta>Falta el QR: corré <b>npm run qr</b></span>\'"></div>' +
           '<div class="flecha">Abrí la cámara del celu y apuntá al QR</div>' +
           '<div class="empuje"></div>' +
-          '<div class="nombre">' + esc(p.nombre) + ' · ' + esc(p.slug) + '</div>' +
+          '<div class="nombre">' + esc(C.SITE_URL.replace(/^https?:\/\//, '').replace(/\/$/, '')) + '</div>' +
           '</section>';
       }).join('');
       // Si existe assets/logo-ruvu-negro.svg (versión negra del logo, para imprimir) se usa en vez del texto
