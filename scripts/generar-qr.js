@@ -29,7 +29,8 @@ fs.mkdirSync(dir, { recursive: true });
 (async () => {
   const lista = [];
   // QR general (sin ?p=): sirve para cualquier lugar, la persona escribe en qué parada está
-  const todos = [{ slug: 'general', nombre: 'QR general (cualquier parada)', general: true }].concat(C.PUNTOS);
+  // Un solo QR para todas las ubicaciones (la persona escribe en qué parada está)
+  const todos = [{ slug: 'general', nombre: 'QR general (cualquier parada)', general: true }];
   for (const p of todos) {
     const url = p.general ? base : base + '?p=' + encodeURIComponent(p.slug);
     await QRCode.toFile(path.join(dir, p.slug + '.png'), url, { ...opciones, type: 'png', width: 1200 });
