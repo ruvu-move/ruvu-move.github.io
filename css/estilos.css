@@ -339,10 +339,3 @@ h1:focus, h2:focus { outline: none; }
   border: 2px solid var(--grafito); background: var(--superficie); color: var(--ruvu-blanco);
 }
 .campo input[type="text"]:focus { outline: none; border-color: var(--ruvu-verde); }
-.sugerencias { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; }
-.sugerencia { flex-direction: row; justify-content: space-between; align-items: center; min-height: 52px; }
-.sugerencia i { font-style: normal; color: var(--ruvu-verde); font-weight: 800; }
-.abajo-fijo { position: sticky; bottom: 0; z-index: 2; background: var(--ruvu-negro);
-  margin: 0 -16px; padding: 12px 16px calc(12px + env(safe-area-inset-bottom)); }
-.abajo-fijo .btn[disabled] { opacity: 1; background: var(--superficie-2); color: var(--gris-plaza); }
-.sugerencia em { font-style: normal; color: var(--gris-plaza); }

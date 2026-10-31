@@ -14,7 +14,7 @@ const WA = n => `221 555 ${String(1000 + n)}`;
 const SESIONES = [
   { id: 1, p: 'plaza-san-martin', acc: ['empezar', 'parada', 'terminal', 'caminando', 'todos_los_dias', 'si', '25-34', 'si', 'wa', 'pv', 'invitar'],
     espera: { parada: 'plaza-san-martin', parada_texto: 'Plaza San Martín', usaria: 'si', acepta_precio: 'si', completo: 'si', ultimo_paso: 'fin', wa: true, invito_amigo: 'si', dia_primer_viaje: 'lun', franja_primer_viaje: '7-10' } },
-  { id: 2, p: 'plaza-san-martin', acc: ['empezar', 'escribir:la casa de mi tía', 'siguiente-sin-elegir', 'elegir-otra', 'parada', 'plaza-moreno', 'micro', '2-3', 'si', '18-24', 'si', 'wa', 'pv'],
+  { id: 2, p: 'plaza-san-martin', acc: ['empezar', 'escribir:la casa de mi tía', 'parada', 'plaza-moreno', 'micro', '2-3', 'si', '18-24', 'si', 'wa', 'pv'],
     espera: { parada: 'otra', parada_texto: 'la casa de mi tía', usaria: 'si', acepta_precio: 'si', completo: 'si', ultimo_paso: 'fin', wa: true } },
   { id: 3, p: 'bosque', acc: ['empezar', 'parada', 'terminal', 'doble:caminando|micro', '4_o_mas', 'depende', '18-24', 'caro', 'pack', 'wa', 'pv'],
     espera: { usaria: 'depende', acepta_precio: 'caro', oferta_elegida: 'pack', completo: 'si', wa: true, modo_actual: 'caminando' } },
@@ -34,7 +34,7 @@ const SESIONES = [
     espera: { usaria: 'si', edad: 'menos_18', completo: 'si', ultimo_paso: 'fin_menor', wa: false, codigo: '' }, menor: true },
   { id: 11, p: 'facultad', acc: ['empezar', 'escribir:odonto', 'parada', 'plaza-moreno', 'micro', '4_o_mas', 'no', 'clima', 'menos_18'],
     espera: { usaria: 'no', motivo_no: 'clima', edad: 'menos_18', completo: 'si', ultimo_paso: 'fin_menor', wa: false, parada: 'fac-odontologia', parada_texto: 'odonto' }, menor: true },
-  { id: 12, p: 'facultad', acc: ['empezar'], espera: { completo: 'no', ultimo_paso: 'parada', wa: false, parada: '' } },
+  { id: 12, p: 'facultad', acc: ['empezar', 'siguiente-sin-escribir'], espera: { completo: 'no', ultimo_paso: 'parada', wa: false, parada: '' } },
   { id: 13, p: 'control-calle-8', acc: ['empezar', 'parada', 'terminal', 'caminando', '2-3'], espera: { completo: 'no', ultimo_paso: 'usaria', wa: false } },
   { id: 14, p: 'control-calle-8', acc: ['empezar', 'parada', 'terminal', 'auto', '2-3', 'si', '25-34'], espera: { completo: 'no', ultimo_paso: 'precio', usaria: 'si', wa: false } },
   { id: 15, p: 'plaza-san-martin', acc: ['empezar', 'parada', 'estacion', 'caminando', '2-3', 'si', '18-24', 'no_pagaria'],
@@ -81,12 +81,8 @@ async function correrSesion(browser, s, codigos) {
       await page.type('#parada', a.slice(9));
       continue;
     }
-    if (a === 'siguiente-sin-elegir') {
-      check(await page.isDisabled('#siguiente-parada'), `S${s.id}: no puede seguir sin elegir una parada de la lista`);
-      continue;
-    }
-    if (a === 'elegir-otra') {
-      await page.click('.sugerencia:has-text("Otra")');
+    if (a === 'siguiente-sin-escribir') {
+      check(await page.inputValue('#parada') === '' && await page.isDisabled('#siguiente-parada'), `S${s.id}: no puede seguir sin escribir dónde está`);
       continue;
     }
     if (a.startsWith('doble:')) {
@@ -103,8 +99,9 @@ async function correrSesion(browser, s, codigos) {
     }
     if (a === 'parada') {
       if (s.id === 17) {
-        const sug = await page.textContent('.sugerencia.elegida');
-        check(sug.includes('Plaza Moreno'), `S17: "P MORENO" se autocompleta con Plaza Moreno`);
+        await page.locator('#parada').blur();
+        check(await page.inputValue('#parada') === 'Plaza Moreno', `S17: "P MORENO" se autocompleta con Plaza Moreno`);
+        check(!(await page.$('.sugerencia')), 'S17: es un solo campo, sin lista de opciones');
       }
       if (s.id === 1) check(await page.inputValue('#parada') === 'Plaza San Martín', 'S1: la parada viene completa desde el QR');
       await page.click('#siguiente-parada'); await esperarCambio(antes); continue;

@@ -126,100 +126,57 @@
   P.parada = {
     p: 0.05,
     html: function () {
-      return '<h2>¿En qué parada estás?</h2>' +
-        '<p class="sub">Elegí una de la lista. Si no está, escribila.</p>' +
+      return '<h2>¿Dónde estás?</h2>' +
+        '<p class="sub">Escribí la parada o el lugar. Ej: Plaza Moreno, la Terminal, Calle 8.</p>' +
         '<form id="form-parada" novalidate autocomplete="off">' +
-        '<div class="campo"><label for="parada" class="sr">Parada</label>' +
+        '<div class="campo" id="campo-parada"><label for="parada" class="sr">Dónde estás</label>' +
         '<input id="parada" type="text" inputmode="text" enterkeyhint="next" autocapitalize="words" ' +
-        'spellcheck="false" placeholder="Buscá o escribí tu parada" maxlength="60" role="combobox" ' +
-        'aria-autocomplete="list" aria-controls="sugerencias" aria-expanded="false"></div>' +
-        '<div class="sugerencias" id="sugerencias" role="listbox" aria-label="Paradas sugeridas"></div>' +
-        '<p class="error" id="err-parada" hidden>Elegí una opción de la lista.</p>' +
-        '<div class="empuje"></div><div class="abajo abajo-fijo">' +
+        'spellcheck="false" placeholder="Escribí dónde estás" maxlength="60">' +
+        '<p class="error" id="err-parada" hidden>Contanos dónde estás para seguir.</p></div>' +
+        '<div class="empuje"></div><div class="abajo">' +
         '<button type="submit" class="btn btn-verde" id="siguiente-parada" disabled>Siguiente</button></div></form>';
     },
     montar: function () {
       var input = document.getElementById('parada');
-      var lista = document.getElementById('sugerencias');
       var btn = document.getElementById('siguiente-parada');
-      var resultados = [];
-      var elegida = null; // parada confirmada (tocada o completada sola)
-      var escrito = '';   // lo que escribió la persona, tal cual (se guarda en parada_texto)
-
-      function otraOpcion(texto) {
-        return { id: 'otra', otra: true, nombre: texto };
-      }
-
-      function pintar() {
-        var opciones = resultados.map(function (res) { return res.parada; });
-        var texto = input.value.trim();
-        // si lo que escribió no es una parada conocida, puede elegirlo igual como "otra"
-        var hayExacta = resultados[0] && resultados[0].puntaje >= 80;
-        if (texto.length >= 2 && !hayExacta && !(elegida && !elegida.otra)) opciones.push(otraOpcion(texto));
-        if (!texto) opciones.push({ id: '__escribir', escribir: true, nombre: 'Otro lugar: escribilo arriba' });
-        if (elegida && elegida.otra) elegida = otraOpcion(texto); // sigue el texto si edita
-        lista.innerHTML = opciones.map(function (op, i) {
-          var sel = elegida && elegida.id === op.id;
-          return '<button type="button" class="btn btn-opcion sugerencia' + (sel ? ' elegida' : '') + '" role="option" ' +
-            'aria-selected="' + (sel ? 'true' : 'false') + '" data-i="' + i + '">' +
-            '<span>' + (op.otra ? 'Otra: «' + esc(op.nombre) + '»' : op.escribir ? '<em>' + esc(op.nombre) + '</em>' : esc(op.nombre)) + '</span>' +
-            (sel ? '<i aria-hidden="true">✓</i>' : '') + '</button>';
-        }).join('');
-        visibles = opciones;
-        input.setAttribute('aria-expanded', opciones.length ? 'true' : 'false');
-        btn.disabled = !elegida || !texto;
-        if (elegida) err.hidden = true;
-      }
-      var visibles = [];
       var err = document.getElementById('err-parada');
+      var escrito = ''; // lo que escribió la persona, tal cual (se guarda en parada_texto)
 
-      function buscar() {
-        // sin texto: la lista completa de paradas; escribiendo: se filtra
-        resultados = input.value.trim()
-          ? R.buscarParadas(input.value, 6)
-          : (C.PARADAS || []).map(function (p) { return { parada: p, puntaje: 0 }; });
-        var top = resultados[0];
-        // autocompleta solo si escribió una palabra clave; si no, tiene que tocar una opción
-        elegida = top && top.puntaje >= 80 ? top.parada : (elegida && elegida.otra ? elegida : null);
-        pintar();
+      // Una palabra clave ("moreno", "P Moreno", "tren"...) identifica la parada
+      function reconocida(txt) {
+        var top = R.buscarParadas(txt, 1)[0];
+        return top && top.puntaje >= 80 ? top.parada : null;
+      }
+      // Autocompletar: el campo pasa a mostrar el nombre completo
+      function completar() {
+        var p = reconocida(input.value);
+        if (p) input.value = p.nombre;
+        return p;
       }
 
-      input.addEventListener('input', function () { escrito = input.value; buscar(); });
-      // al salir del campo, si hay una parada conocida elegida se completa el nombre entero
-      input.addEventListener('blur', function () { if (elegida && !elegida.otra) input.value = elegida.nombre; });
-      lista.addEventListener('click', function (e) {
-        var b = e.target.closest('.sugerencia');
-        if (!b) return;
-        var op = visibles[Number(b.getAttribute('data-i'))];
-        if (op.escribir) { input.focus(); window.scrollTo(0, 0); return; }
-        elegida = op;
-        escrito = escrito || elegida.nombre;
-        if (!elegida.otra) {
-          input.value = elegida.nombre;
-          resultados = [{ parada: elegida, puntaje: 100 }];
-        }
-        pintar();
+      input.addEventListener('input', function () {
+        escrito = input.value;
+        btn.disabled = input.value.trim().length < 2;
+        err.hidden = true;
       });
+      input.addEventListener('blur', completar);
       document.getElementById('form-parada').addEventListener('submit', function (e) {
         e.preventDefault();
+        if (input.value.trim().length < 2) { err.hidden = false; input.focus(); return; }
         var texto = (escrito || input.value).trim();
-        if (!elegida || !input.value.trim()) { err.hidden = false; return; }
-        paradaElegida = elegida.otra ? null : elegida;
-        origen = paradaElegida && typeof paradaElegida.lat === 'number' ? paradaElegida : punto;
-        guardar({ parada: elegida.otra ? 'otra' : elegida.id, parada_texto: texto.slice(0, 60) }, 'destino');
+        var p = completar();
+        paradaElegida = p;
+        origen = p && typeof p.lat === 'number' ? p : punto;
+        guardar({ parada: p ? p.id : 'otra', parada_texto: texto.slice(0, 60) }, 'destino');
         ir('destino');
       });
 
-      // Volver a esta pantalla o venir de un QR con punto: arranca completa
+      // Volver a esta pantalla o venir de un QR con punto: arranca completo
       var previa = paradaElegida || (punto && paradaPorId(punto.parada));
       if (r.parada_texto) input.value = escrito = r.parada_texto;
       else if (previa) input.value = escrito = previa.nombre;
-      buscar();
-      if (r.parada === 'otra') { elegida = otraOpcion(input.value.trim()); pintar(); }
-      else if (previa && (!r.parada_texto || r.parada === previa.id)) {
-        elegida = previa; input.value = previa.nombre;
-        resultados = [{ parada: previa, puntaje: 100 }]; pintar();
-      }
+      completar();
+      btn.disabled = input.value.trim().length < 2;
     }
   };
 

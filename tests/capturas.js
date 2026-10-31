@@ -111,8 +111,8 @@ async function sembrar() {
     const { ctx, page } = await nuevo();
     await page.goto(BASE + '/');
     await ir(page, '#empezar'); await foto(page, 'parada-vacia');
-    await page.type('#parada', 'san mar'); await foto(page, 'parada-escribiendo');
-    await page.fill('#parada', ''); await page.type('#parada', 'P Moreno'); await foto(page, 'parada-autocompletada');
+    await page.type('#parada', 'P Moreno'); await foto(page, 'parada-escribiendo');
+    await page.locator('#parada').blur(); await foto(page, 'parada-autocompletada');
     await ir(page, '#siguiente-parada'); await foto(page, 'destino-desde-plaza-moreno');
     await ctx.close();
   }

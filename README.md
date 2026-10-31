@@ -134,17 +134,15 @@ Cómo se calcula el viaje:
 
 ---
 
-## Parada ("¿En qué parada estás?")
+## Pregunta "¿Dónde estás?"
 
-Primera pregunta después de *Empezar*. Es **una sola pregunta obligatoria**: se ve la lista de `PARADAS` de `config.js` para elegir **una**; arriba hay un campo para buscar o escribir. Si el lugar no está, elige "Otra: «lo que escribió»".
+Primera pregunta después de *Empezar*: **un solo campo para escribir**, obligatorio (sin lista de opciones).
+- Si lo que escriben coincide con una palabra clave de `PARADAS` (`config.js`), al terminar de escribir el campo se completa solo con el nombre: `moreno`, `MORENO`, `P Moreno` → **Plaza Moreno**; `italia` → **Plaza Italia**; `tren` → **Estación de tren**; `8` → **Calle 8**. No importan mayúsculas, tildes ni "plaza", "pza", "facultad de"…
+- Si viene del QR de un punto, el campo ya aparece completo (se puede cambiar).
+- Se guarda `parada` (id reconocido, u `otra` si no coincidió) y `parada_texto` (lo que escribió). Si la parada tiene coordenadas, desde ahí se calculan minutos y precio.
+- Para sumar lugares o palabras clave, editá `PARADAS` (coordenadas aproximadas: TODO).
 
-Todas las preguntas son obligatorias y de una sola opción (el primer toque bloquea las demás). Lo único que se puede no dejar es el WhatsApp ("Prefiero no dejarlo"), porque el consentimiento para datos personales tiene que ser libre (Ley 25.326).
-
-El autocompletado usa:
-- `claves`: palabras que disparan la sugerencia. No importan mayúsculas, tildes ni "plaza", "pza", "facultad de"…: `moreno`, `MORENO`, `P Moreno` → **Plaza Moreno**; `italia` → **Plaza Italia**; `tren` → **Estación de tren**; `8` → **Calle 8**.
-- Si escanea el QR de un punto, la parada ya aparece completa (campo `parada` de cada punto).
-- Se guarda `parada` (id reconocido, u `otra`) y `parada_texto` (lo que escribió). Si la parada tiene coordenadas, desde ahí se calculan minutos y precio, y no se ofrece como destino un lugar a menos de 300 m.
-- Para sumar una parada o una palabra clave, agregala en `PARADAS` (coordenadas aproximadas: TODO).
+Todas las preguntas son obligatorias y de una sola opción (el primer toque bloquea las demás). Lo único que se puede no dejar es el WhatsApp ("Prefiero no dejarlo"): el consentimiento para datos personales tiene que ser libre (Ley 25.326).
 
 ## 4. QR y carteles
 
