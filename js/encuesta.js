@@ -64,6 +64,18 @@
   }
 
   /* Trama platense: cuadrícula de La Plata con diagonales y plaza central */
+  /* Búho RUVU (mascota) animado. Con texto aparece con un globo (a mitad de la
+     encuesta, para dar un empujoncito a seguir); sin texto, grande y centrado
+     (pantallas finales). */
+  function buho(texto) {
+    var img = '<picture><source srcset="assets/buho.webp" type="image/webp">' +
+      '<img src="assets/buho.gif" alt="Búho RUVU" width="300" height="390" decoding="async"></picture>';
+    if (!texto) return '<div class="buho buho-grande">' + img + '</div>';
+    return '<div class="buho">' + img + '<p class="globo">' + texto + '</p></div>';
+  }
+  // Precarga para que el búho aparezca al instante
+  (function () { var i = new Image(); i.src = 'assets/buho.webp'; })();
+
   function trama() {
     return '<svg class="trama" viewBox="0 0 600 600" preserveAspectRatio="xMidYMid slice" aria-hidden="true">' +
       '<path d="M50 0V600M100 0V600M150 0V600M200 0V600M250 0V600M300 0V600M350 0V600M400 0V600M450 0V600M500 0V600M550 0V600M0 50H600M0 100H600M0 150H600M0 200H600M0 250H600M0 300H600M0 350H600M0 400H600M0 450H600M0 500H600M0 550H600" stroke="#6B2BD9" stroke-width="2"/>' +
@@ -71,18 +83,6 @@
       '<circle cx="300" cy="300" r="24" fill="#FF3D9A"/></svg>';
   }
 
-  /* Búho RUVU arriba del monopatín (ojos de rueda, panza con la trama) */
-  function buho() {
-    return '<svg class="buho" viewBox="0 0 200 236" role="img" aria-label="Búho RUVU arriba de un monopatín">' +
-      '<path d="M40 78 Q40 40 66 32 L56 6 L92 28 Q100 26 108 28 L144 6 L134 32 Q160 40 160 78 L160 150 Q160 205 100 208 Q40 205 40 150 Z" fill="#6B2BD9"/>' +
-      '<circle cx="72" cy="88" r="28" fill="#0B0B0B"/><circle cx="72" cy="88" r="19" fill="#2B2F31"/><circle cx="72" cy="88" r="9" fill="#12E39A"/>' +
-      '<circle cx="128" cy="88" r="28" fill="#0B0B0B"/><circle cx="128" cy="88" r="19" fill="#2B2F31"/><circle cx="128" cy="88" r="9" fill="#12E39A"/>' +
-      '<path d="M92 118 L108 118 L100 134 Z" fill="#FF3D9A"/>' +
-      '<path d="M70 150H130M70 170H130M85 140V195M115 140V195M68 140L132 198M132 140L68 198" stroke="#12E39A" stroke-width="3"/>' +
-      '<rect x="78" y="202" width="14" height="10" rx="3" fill="#12E39A"/><rect x="108" y="202" width="14" height="10" rx="3" fill="#12E39A"/>' +
-      '<rect x="24" y="212" width="152" height="10" rx="5" fill="#FFFFFF"/>' +
-      '<circle cx="40" cy="226" r="9" fill="#FFFFFF"/><circle cx="160" cy="226" r="9" fill="#FFFFFF"/></svg>';
-  }
 
   function opciones(lista) {
     return '<div class="opciones">' + lista.map(function (o) {
@@ -254,7 +254,8 @@
   P.edad = {
     p: 0.52,
     html: function () {
-      return '<h2>¿Qué edad tenés?</h2>' + opciones([
+      return buho('¡Vas por la mitad! Seguí y te llevás un <b>viaje gratis</b> 🎁') +
+        '<h2>¿Qué edad tenés?</h2>' + opciones([
         ['menos_18', 'Menos de 18'], ['18-24', '18 a 24'], ['25-34', '25 a 34'], ['35-44', '35 a 44'], ['45+', '45 o más']
       ]);
     },
