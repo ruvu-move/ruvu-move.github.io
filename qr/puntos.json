@@ -3,40 +3,5 @@
     "slug": "general",
     "nombre": "QR general (cualquier parada)",
     "url": "https://ruvu-move.github.io/"
-  },
-  {
-    "slug": "plaza-san-martin",
-    "nombre": "Plaza San Martín",
-    "url": "https://ruvu-move.github.io/?p=plaza-san-martin"
-  },
-  {
-    "slug": "bosque",
-    "nombre": "Paseo del Bosque",
-    "url": "https://ruvu-move.github.io/?p=bosque"
-  },
-  {
-    "slug": "terminal",
-    "nombre": "Terminal de ómnibus",
-    "url": "https://ruvu-move.github.io/?p=terminal"
-  },
-  {
-    "slug": "estacion",
-    "nombre": "Estación de trenes",
-    "url": "https://ruvu-move.github.io/?p=estacion"
-  },
-  {
-    "slug": "plaza-italia",
-    "nombre": "Plaza Italia",
-    "url": "https://ruvu-move.github.io/?p=plaza-italia"
-  },
-  {
-    "slug": "facultad",
-    "nombre": "Puerta de facultad",
-    "url": "https://ruvu-move.github.io/?p=facultad"
-  },
-  {
-    "slug": "control-calle-8",
-    "nombre": "Calle 8 (punto de control)",
-    "url": "https://ruvu-move.github.io/?p=control-calle-8"
   }
 ]
