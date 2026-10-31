@@ -10,11 +10,11 @@ window.RUVU_CONFIG = {
   /* URL del Apps Script publicado como Web App (termina en /exec).
      Si la dejás vacía (''), la web funciona en "modo demo": no guarda nada en
      la hoja y muestra los envíos en la consola del navegador. */
-  API_URL: '',
+  API_URL: 'https://script.google.com/macros/s/AKfycbxCAJhF7QYs_HmgayxVPlzTKvbTmFfEySZKeihwXgfZy7lwCjdr_7H-zsUH438SSOL3Mw/exec',
 
   /* URL pública del sitio (con / al final). Se usa para generar los QR.
      Ejemplo GitHub Pages: 'https://tu-usuario.github.io/ruvu-encuesta/' */
-  SITE_URL: 'https://ruvu-lp.github.io/',
+  SITE_URL: 'https://ruvu-move.github.io/',
 
   /* PIN para entrar al contador (/contador.html) y al panel (/panel.html).
      IMPORTANTE: tiene que ser el mismo que pongas en apps-script/Code.gs. */

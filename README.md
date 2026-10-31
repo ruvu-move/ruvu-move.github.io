@@ -62,17 +62,15 @@ capturas/           Capturas mobile de cada pantalla + carteles-A5.pdf
 
 ## 2. Publicar en GitHub Pages
 
-### Dirección que se ve al escanear: `ruvu-lp.github.io`
+### Dirección que se ve al escanear: `ruvu-move.github.io`
 
-Para que al escanear no aparezca el usuario personal, el sitio vive en una **organización** de GitHub (gratis):
+El sitio vive en la **organización** de GitHub `ruvu-move` (gratis), así al escanear no aparece el usuario personal:
 
-1. Crear la organización: https://github.com/account/organizations/new?plan=free → nombre **`ruvu-lp`** (si está tomado, elegí otro y cambiá `SITE_URL` en `config.js` + `npm run qr`).
-2. En el repo actual: **Settings → General → Danger Zone → Transfer ownership** → a `ruvu-lp`.
-3. Ya en la organización: **Settings → General → Repository name** → **`ruvu-lp.github.io`** → *Rename*.
-4. **Settings → Pages** → *Deploy from a branch* → `main` / `(root)` → *Save*.
-5. En 1–2 minutos queda en **https://ruvu-lp.github.io/** (sin `/ruvu-encuesta`).
+- Repo: https://github.com/ruvu-move/ruvu-move.github.io
+- **Settings → Pages** → *Deploy from a branch* → `main` / `(root)`.
+- Sitio: **https://ruvu-move.github.io/**
 
-Los QR de `/qr` ya apuntan a esa dirección.
+Los QR de `/qr` y los carteles ya apuntan a esa dirección. Si algún día cambia, editá `SITE_URL` en `config.js` y corré `npm run qr`.
 
 ### Pasos generales
 
@@ -162,7 +160,7 @@ Después subí la carpeta `qr/` a GitHub junto con lo demás y abrí **`carteles
 - imprimí con tamaño **A5**, márgenes **ninguno**, escala **100%** (en una hoja A4 podés elegir "2 páginas por hoja");
 - está pensado en blanco y negro puro. Probá escanear uno impreso antes de salir.
 
-Ya hay un PDF de ejemplo en `capturas/carteles-A5.pdf` (con la URL provisoria; regeneralo con la real).
+El PDF listo para imprimir está en `capturas/carteles-A5.pdf` (y una copia en `qr/carteles-A5.pdf`), con la dirección real.
 
 ---
 
