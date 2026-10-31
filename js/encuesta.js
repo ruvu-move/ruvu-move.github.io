@@ -127,14 +127,15 @@
     p: 0.05,
     html: function () {
       return '<h2>¿En qué parada estás?</h2>' +
-        '<p class="sub">Escribí la plaza, esquina o lugar. Ej: Plaza Moreno, la Terminal, Calle 8.</p>' +
+        '<p class="sub">Elegí una de la lista. Si no está, escribila.</p>' +
         '<form id="form-parada" novalidate autocomplete="off">' +
         '<div class="campo"><label for="parada" class="sr">Parada</label>' +
         '<input id="parada" type="text" inputmode="text" enterkeyhint="next" autocapitalize="words" ' +
-        'spellcheck="false" placeholder="Ej: Plaza Moreno" maxlength="60" role="combobox" ' +
+        'spellcheck="false" placeholder="Buscá o escribí tu parada" maxlength="60" role="combobox" ' +
         'aria-autocomplete="list" aria-controls="sugerencias" aria-expanded="false"></div>' +
         '<div class="sugerencias" id="sugerencias" role="listbox" aria-label="Paradas sugeridas"></div>' +
-        '<div class="empuje"></div><div class="abajo">' +
+        '<p class="error" id="err-parada" hidden>Elegí una opción de la lista.</p>' +
+        '<div class="empuje"></div><div class="abajo abajo-fijo">' +
         '<button type="submit" class="btn btn-verde" id="siguiente-parada" disabled>Siguiente</button></div></form>';
     },
     montar: function () {
@@ -145,44 +146,67 @@
       var elegida = null; // parada confirmada (tocada o completada sola)
       var escrito = '';   // lo que escribió la persona, tal cual (se guarda en parada_texto)
 
-      function pintar() {
-        lista.innerHTML = resultados.map(function (res, i) {
-          var sel = elegida && elegida.id === res.parada.id;
-          return '<button type="button" class="btn btn-opcion sugerencia' + (sel ? ' elegida' : '') + '" role="option" ' +
-            'aria-selected="' + (sel ? 'true' : 'false') + '" data-i="' + i + '">' +
-            '<span>' + esc(res.parada.nombre) + '</span>' + (sel ? '<i aria-hidden="true">✓</i>' : '') + '</button>';
-        }).join('');
-        input.setAttribute('aria-expanded', resultados.length ? 'true' : 'false');
-        btn.disabled = !input.value.trim();
+      function otraOpcion(texto) {
+        return { id: 'otra', otra: true, nombre: texto };
       }
 
+      function pintar() {
+        var opciones = resultados.map(function (res) { return res.parada; });
+        var texto = input.value.trim();
+        // si lo que escribió no es una parada conocida, puede elegirlo igual como "otra"
+        var hayExacta = resultados[0] && resultados[0].puntaje >= 80;
+        if (texto.length >= 2 && !hayExacta && !(elegida && !elegida.otra)) opciones.push(otraOpcion(texto));
+        if (!texto) opciones.push({ id: '__escribir', escribir: true, nombre: 'Otro lugar: escribilo arriba' });
+        if (elegida && elegida.otra) elegida = otraOpcion(texto); // sigue el texto si edita
+        lista.innerHTML = opciones.map(function (op, i) {
+          var sel = elegida && elegida.id === op.id;
+          return '<button type="button" class="btn btn-opcion sugerencia' + (sel ? ' elegida' : '') + '" role="option" ' +
+            'aria-selected="' + (sel ? 'true' : 'false') + '" data-i="' + i + '">' +
+            '<span>' + (op.otra ? 'Otra: «' + esc(op.nombre) + '»' : op.escribir ? '<em>' + esc(op.nombre) + '</em>' : esc(op.nombre)) + '</span>' +
+            (sel ? '<i aria-hidden="true">✓</i>' : '') + '</button>';
+        }).join('');
+        visibles = opciones;
+        input.setAttribute('aria-expanded', opciones.length ? 'true' : 'false');
+        btn.disabled = !elegida || !texto;
+        if (elegida) err.hidden = true;
+      }
+      var visibles = [];
+      var err = document.getElementById('err-parada');
+
       function buscar() {
-        resultados = R.buscarParadas(input.value, 4);
+        // sin texto: la lista completa de paradas; escribiendo: se filtra
+        resultados = input.value.trim()
+          ? R.buscarParadas(input.value, 6)
+          : (C.PARADAS || []).map(function (p) { return { parada: p, puntaje: 0 }; });
         var top = resultados[0];
-        // autocompleta si escribió una palabra clave (o si hay una sola opción posible)
-        elegida = top && (top.puntaje >= 80 || (resultados.length === 1 && top.puntaje >= 55)) ? top.parada : null;
+        // autocompleta solo si escribió una palabra clave; si no, tiene que tocar una opción
+        elegida = top && top.puntaje >= 80 ? top.parada : (elegida && elegida.otra ? elegida : null);
         pintar();
       }
 
       input.addEventListener('input', function () { escrito = input.value; buscar(); });
-      // al salir del campo, si hay una parada elegida se completa el nombre entero
-      input.addEventListener('blur', function () { if (elegida) input.value = elegida.nombre; });
+      // al salir del campo, si hay una parada conocida elegida se completa el nombre entero
+      input.addEventListener('blur', function () { if (elegida && !elegida.otra) input.value = elegida.nombre; });
       lista.addEventListener('click', function (e) {
         var b = e.target.closest('.sugerencia');
         if (!b) return;
-        elegida = resultados[Number(b.getAttribute('data-i'))].parada;
+        var op = visibles[Number(b.getAttribute('data-i'))];
+        if (op.escribir) { input.focus(); window.scrollTo(0, 0); return; }
+        elegida = op;
         escrito = escrito || elegida.nombre;
-        input.value = elegida.nombre;
-        resultados = [{ parada: elegida, puntaje: 100 }];
+        if (!elegida.otra) {
+          input.value = elegida.nombre;
+          resultados = [{ parada: elegida, puntaje: 100 }];
+        }
         pintar();
       });
       document.getElementById('form-parada').addEventListener('submit', function (e) {
         e.preventDefault();
         var texto = (escrito || input.value).trim();
-        if (!input.value.trim()) return;
-        paradaElegida = elegida;
-        origen = elegida && typeof elegida.lat === 'number' ? elegida : punto;
-        guardar({ parada: elegida ? elegida.id : 'otra', parada_texto: texto.slice(0, 60) }, 'destino');
+        if (!elegida || !input.value.trim()) { err.hidden = false; return; }
+        paradaElegida = elegida.otra ? null : elegida;
+        origen = paradaElegida && typeof paradaElegida.lat === 'number' ? paradaElegida : punto;
+        guardar({ parada: elegida.otra ? 'otra' : elegida.id, parada_texto: texto.slice(0, 60) }, 'destino');
         ir('destino');
       });
 
@@ -190,8 +214,12 @@
       var previa = paradaElegida || (punto && paradaPorId(punto.parada));
       if (r.parada_texto) input.value = escrito = r.parada_texto;
       else if (previa) input.value = escrito = previa.nombre;
-      if (input.value) buscar();
-      if (previa && (!r.parada_texto || r.parada === previa.id)) { elegida = previa; pintar(); }
+      buscar();
+      if (r.parada === 'otra') { elegida = otraOpcion(input.value.trim()); pintar(); }
+      else if (previa && (!r.parada_texto || r.parada === previa.id)) {
+        elegida = previa; input.value = previa.nombre;
+        resultados = [{ parada: previa, puntaje: 100 }]; pintar();
+      }
     }
   };
 
@@ -398,14 +426,14 @@
     html: function () {
       var dias = [['lun', 'Lun'], ['mar', 'Mar'], ['mie', 'Mié'], ['jue', 'Jue'], ['vie', 'Vie'], ['sab', 'Sáb'], ['dom', 'Dom']];
       var franjas = ['7-10', '10-13', '13-16', '16-19', '19-21'];
-      return '<h2>¿Qué día y horario de la primera semana lo usarías?</h2><p class="sub">Opcional, para saber dónde tener monopatines.</p>' +
+      return '<h2>¿Qué día y horario de la primera semana lo usarías?</h2><p class="sub">Elegí un día y un horario, así sabemos dónde tener monopatines.</p>' +
         '<p class="etiqueta">Día</p><div class="chips" data-grupo="dia">' +
         dias.map(function (d) { return '<button type="button" class="chip" aria-pressed="false" data-v="' + d[0] + '">' + d[1] + '</button>'; }).join('') +
         '</div><p class="etiqueta">Horario</p><div class="chips cinco" data-grupo="franja">' +
         franjas.map(function (f) { return '<button type="button" class="chip" aria-pressed="false" data-v="' + f + '">' + f.replace('-', '–') + ' h</button>'; }).join('') +
         '</div><div class="empuje"></div><div class="abajo">' +
-        '<button type="button" class="btn btn-verde" id="listo-pv" disabled>Listo</button>' +
-        '<button type="button" class="btn btn-texto" id="saltar-pv">Saltar</button></div>';
+        '<p class="chica" id="falta-pv" style="text-align:center;margin:0">Elegí un día y un horario.</p>' +
+        '<button type="button" class="btn btn-verde" id="listo-pv" disabled>Listo</button></div>';
     },
     montar: function () {
       var sel = {};
@@ -416,14 +444,11 @@
           [].forEach.call(g.querySelectorAll('.chip'), function (c) { c.setAttribute('aria-pressed', c === b ? 'true' : 'false'); });
           sel[g.getAttribute('data-grupo')] = b.getAttribute('data-v');
           document.getElementById('listo-pv').disabled = !(sel.dia && sel.franja);
+          document.getElementById('falta-pv').hidden = !!(sel.dia && sel.franja);
         });
       });
       document.getElementById('listo-pv').onclick = function () {
         guardar({ dia_primer_viaje: sel.dia, franja_primer_viaje: sel.franja }, 'fin');
-        ir('fin', { sinVolver: true });
-      };
-      document.getElementById('saltar-pv').onclick = function () {
-        guardar({}, 'fin');
         ir('fin', { sinVolver: true });
       };
     }
@@ -510,8 +535,15 @@
       $volver.hidden = !historial.length || historial[historial.length - 1] === 'inicio';
     }
     if (def.elegir) {
+      var respondida = false;
       $pantalla.querySelectorAll('.btn-opcion').forEach(function (b) {
         b.addEventListener('click', function () {
+          if (respondida) return;
+          respondida = true;
+          $pantalla.querySelectorAll('.btn-opcion').forEach(function (o) {
+            o.disabled = o !== b;
+            o.setAttribute('aria-pressed', o === b ? 'true' : 'false');
+          });
           b.classList.add('elegida');
           var v = b.getAttribute('data-v');
           setTimeout(function () { def.elegir(v); }, 140);

@@ -136,7 +136,11 @@ Cómo se calcula el viaje:
 
 ## Parada ("¿En qué parada estás?")
 
-Primera pregunta después de *Empezar*. La persona escribe libremente y se autocompleta con `PARADAS` de `config.js`:
+Primera pregunta después de *Empezar*. Es **una sola pregunta obligatoria**: se ve la lista de `PARADAS` de `config.js` para elegir **una**; arriba hay un campo para buscar o escribir. Si el lugar no está, elige "Otra: «lo que escribió»".
+
+Todas las preguntas son obligatorias y de una sola opción (el primer toque bloquea las demás). Lo único que se puede no dejar es el WhatsApp ("Prefiero no dejarlo"), porque el consentimiento para datos personales tiene que ser libre (Ley 25.326).
+
+El autocompletado usa:
 - `claves`: palabras que disparan la sugerencia. No importan mayúsculas, tildes ni "plaza", "pza", "facultad de"…: `moreno`, `MORENO`, `P Moreno` → **Plaza Moreno**; `italia` → **Plaza Italia**; `tren` → **Estación de tren**; `8` → **Calle 8**.
 - Si escanea el QR de un punto, la parada ya aparece completa (campo `parada` de cada punto).
 - Se guarda `parada` (id reconocido, u `otra`) y `parada_texto` (lo que escribió). Si la parada tiene coordenadas, desde ahí se calculan minutos y precio, y no se ofrece como destino un lugar a menos de 300 m.
