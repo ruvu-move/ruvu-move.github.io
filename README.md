@@ -47,7 +47,7 @@ capturas/           Capturas mobile de cada pantalla + carteles-A5.pdf
 
 | Hoja | Contenido |
 |---|---|
-| `respuestas` | Una fila por sesión (`session_id`), que se actualiza con cada respuesta. Columnas: timestamp_scan, timestamp_inicio, timestamp_fin, punto, ref, destino, modo_actual, frecuencia, min_monopatin, min_caminando, precio_mostrado, usaria, motivo_no, edad, acepta_precio, oferta_elegida, precio_max, whatsapp, consentimiento, dia_primer_viaje, franja_primer_viaje, codigo, invito_amigo, ultimo_paso, completo, user_agent. |
+| `respuestas` | Una fila por sesión (`session_id`), que se actualiza con cada respuesta. Columnas: timestamp_scan, timestamp_inicio, timestamp_fin, punto, ref, destino, modo_actual, frecuencia, min_monopatin, min_caminando, precio_mostrado, usaria, motivo_no, edad, acepta_precio, oferta_elegida, precio_max, whatsapp, consentimiento, motivo_viaje, vuelta, cuadras, uso_previo, dia_primer_viaje, franja_primer_viaje, codigo, invito_amigo, ultimo_paso, completo, user_agent. |
 | `eventos` | Log crudo: cada scan, cada respuesta y cada invitación, con su JSON. |
 | `conteo` | Cada toque del contador (`pasa`, `frena`, `deshacer`) con hora y punto. |
 
@@ -141,6 +141,8 @@ Primera pregunta después de *Empezar*: **un solo campo para escribir**, obligat
 - Si viene del QR de un punto, el campo ya aparece completo (se puede cambiar).
 - Se guarda `parada` (id reconocido, u `otra` si no coincidió) y `parada_texto` (lo que escribió). Si la parada tiene coordenadas, desde ahí se calculan minutos y precio.
 - Para sumar lugares o palabras clave, editá `PARADAS` (coordenadas aproximadas: TODO).
+
+**Preguntas extra** (después del WhatsApp o de "Prefiero no dejarlo", antes del final): ¿Para qué es este viaje? (`motivo_viaje`), ¿Lo usarías también para volver? (`vuelta`), ¿Cuántas cuadras caminarías para buscar un monopatín? (`cuadras`) y ¿Alguna vez usaste un monopatín eléctrico? (`uso_previo`). Si alguien abandona ahí, el panel lo muestra en "Abandono por paso".
 
 Todas las preguntas son obligatorias y de una sola opción (el primer toque bloquea las demás). Lo único que se puede no dejar es el WhatsApp ("Prefiero no dejarlo"): el consentimiento para datos personales tiene que ser libre (Ley 25.326).
 

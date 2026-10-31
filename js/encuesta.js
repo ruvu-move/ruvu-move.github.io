@@ -361,25 +361,91 @@
         var id = guardar({
           whatsapp: numero, consentimiento: 'si', codigo: codigo, completo: 'si',
           timestamp_fin: new Date().toISOString()
-        }, 'primer_viaje');
+        }, siguienteTrasWhatsapp('primer_viaje'));
         // El servidor verifica que el código no esté repetido; si lo estaba, devuelve otro.
         cola.esperar(id, 5000).then(function (res) {
           if (res && res.codigo) codigo = res.codigo;
           r.codigo = codigo;
           marcarParticipacion(codigo);
-          ir('primer_viaje', { sinVolver: true });
+          irExtras('primer_viaje');
         });
       });
       document.getElementById('no-wa').onclick = function () {
-        guardar({ completo: 'si', timestamp_fin: new Date().toISOString() }, 'fin_sin_whatsapp');
+        guardar({ completo: 'si', timestamp_fin: new Date().toISOString() }, siguienteTrasWhatsapp('fin_sin_whatsapp'));
         marcarParticipacion(null);
-        ir('fin_sin_whatsapp');
+        irExtras('fin_sin_whatsapp');
       };
     }
   };
 
+  /* ---------- Preguntas extra (después del WhatsApp, antes del final) ----------
+     Las responden todos los que terminan, dejen o no el WhatsApp. Si ya las
+     respondió (volvió con "Cambié de idea"), no se repiten. */
+  var EXTRAS = ['extra_motivo', 'extra_vuelta', 'extra_cuadras', 'extra_uso'];
+  var despuesDeExtras = 'primer_viaje';
+
+  function extrasHechas() { return !!r.uso_previo; }
+  function siguienteTrasWhatsapp(despues) { return extrasHechas() ? despues : EXTRAS[0]; }
+  function irExtras(despues) {
+    despuesDeExtras = despues;
+    ir(extrasHechas() ? despues : EXTRAS[0], { sinVolver: true });
+  }
+  function extra(campo, siguiente) {
+    return function (v) {
+      var campos = {};
+      campos[campo] = v;
+      var prox = siguiente || despuesDeExtras;
+      guardar(campos, prox);
+      ir(prox, siguiente ? {} : { sinVolver: true });
+    };
+  }
+
+  P.extra_motivo = {
+    p: 0.9,
+    html: function () {
+      return '<p class="etiqueta">Extra 1 de 4</p>' +
+        '<h2>¿Para qué es este viaje?</h2>' + opciones([
+          ['facu', 'Facu'], ['laburo', 'Laburo'], ['tramite_compras', 'Trámite o compras'], ['juntada_paseo', 'Juntada o paseo']
+        ]);
+    },
+    elegir: extra('motivo_viaje', 'extra_vuelta')
+  };
+
+  P.extra_vuelta = {
+    p: 0.92,
+    html: function () {
+      return '<p class="etiqueta">Extra 2 de 4</p>' +
+        '<h2>¿Lo usarías también para volver?</h2>' + opciones([
+          ['si', 'Sí'], ['no', 'No, vuelvo de otra forma'], ['depende_horario', 'Depende del horario']
+        ]);
+    },
+    elegir: extra('vuelta', 'extra_cuadras')
+  };
+
+  P.extra_cuadras = {
+    p: 0.94,
+    html: function () {
+      return '<p class="etiqueta">Extra 3 de 4</p>' +
+        '<h2>¿Cuántas cuadras caminarías para buscar un monopatín?</h2>' + opciones([
+          ['1', '1 cuadra'], ['2-3', '2 a 3'], ['4-5', '4 a 5'], ['mas_5', 'Más de 5']
+        ]);
+    },
+    elegir: extra('cuadras', 'extra_uso')
+  };
+
+  P.extra_uso = {
+    p: 0.95,
+    html: function () {
+      return '<p class="etiqueta">Extra 4 de 4</p>' +
+        '<h2>¿Alguna vez usaste un monopatín eléctrico?</h2>' + opciones([
+          ['si_compartido', 'Sí, uno compartido (de alquiler)'], ['si_propio', 'Sí, uno propio o prestado'], ['nunca', 'Nunca']
+        ]);
+    },
+    elegir: extra('uso_previo')
+  };
+
   P.primer_viaje = {
-    p: 0.96,
+    p: 0.97,
     html: function () {
       var dias = [['lun', 'Lun'], ['mar', 'Mar'], ['mie', 'Mié'], ['jue', 'Jue'], ['vie', 'Vie'], ['sab', 'Sáb'], ['dom', 'Dom']];
       var franjas = ['7-10', '10-13', '13-16', '16-19', '19-21'];

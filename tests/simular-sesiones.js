@@ -12,23 +12,23 @@ const WA = n => `221 555 ${String(1000 + n)}`;
 /* Cada sesión: punto, ref opcional, acciones y lo que debería quedar en la hoja.
    Acciones: 'empezar' · 'escribir:<texto>' · 'parada' (Siguiente) · valor de opción · 'wa' · 'nowa' · 'pv' (día+franja) · 'pv' · 'invitar' · 'offline'/'online' */
 const SESIONES = [
-  { id: 1, p: 'plaza-san-martin', acc: ['empezar', 'parada', 'terminal', 'caminando', 'todos_los_dias', 'si', '25-34', 'si', 'wa', 'pv', 'invitar'],
-    espera: { parada: 'plaza-san-martin', parada_texto: 'Plaza San Martín', usaria: 'si', acepta_precio: 'si', completo: 'si', ultimo_paso: 'fin', wa: true, invito_amigo: 'si', dia_primer_viaje: 'lun', franja_primer_viaje: '7-10' } },
-  { id: 2, p: 'plaza-san-martin', acc: ['empezar', 'escribir:la casa de mi tía', 'parada', 'plaza-moreno', 'micro', '2-3', 'si', '18-24', 'si', 'wa', 'pv'],
+  { id: 1, p: 'plaza-san-martin', acc: ['empezar', 'parada', 'terminal', 'caminando', 'todos_los_dias', 'si', '25-34', 'si', 'wa', 'extras', 'pv', 'invitar'],
+    espera: { parada: 'plaza-san-martin', parada_texto: 'Plaza San Martín', motivo_viaje: 'facu', vuelta: 'si', cuadras: '2-3', uso_previo: 'nunca', usaria: 'si', acepta_precio: 'si', completo: 'si', ultimo_paso: 'fin', wa: true, invito_amigo: 'si', dia_primer_viaje: 'lun', franja_primer_viaje: '7-10' } },
+  { id: 2, p: 'plaza-san-martin', acc: ['empezar', 'escribir:la casa de mi tía', 'parada', 'plaza-moreno', 'micro', '2-3', 'si', '18-24', 'si', 'wa', 'extras', 'pv'],
     espera: { parada: 'otra', parada_texto: 'la casa de mi tía', usaria: 'si', acepta_precio: 'si', completo: 'si', ultimo_paso: 'fin', wa: true } },
-  { id: 3, p: 'bosque', acc: ['empezar', 'parada', 'terminal', 'doble:caminando|micro', '4_o_mas', 'depende', '18-24', 'caro', 'pack', 'wa', 'pv'],
+  { id: 3, p: 'bosque', acc: ['empezar', 'parada', 'terminal', 'doble:caminando|micro', '4_o_mas', 'depende', '18-24', 'caro', 'pack', 'wa', 'extras', 'pv'],
     espera: { usaria: 'depende', acepta_precio: 'caro', oferta_elegida: 'pack', completo: 'si', wa: true, modo_actual: 'caminando' } },
-  { id: 4, p: 'bosque', acc: ['empezar', 'parada', 'plaza-moreno', 'caminando', '2-3', 'depende', '25-34', 'caro', 'valle', 'wa', 'pv', 'invitar'],
+  { id: 4, p: 'bosque', acc: ['empezar', 'parada', 'plaza-moreno', 'caminando', '2-3', 'depende', '25-34', 'caro', 'valle', 'wa', 'extras', 'pv', 'invitar'],
     espera: { usaria: 'depende', acepta_precio: 'caro', oferta_elegida: 'valle', completo: 'si', wa: true, invito_amigo: 'si' } },
-  { id: 5, p: 'terminal', acc: ['empezar', 'parada', 'plaza-moreno', 'micro', '1_o_menos', 'si', '35-44', 'caro', 'abono', 'nowa'],
+  { id: 5, p: 'terminal', acc: ['empezar', 'parada', 'plaza-moreno', 'micro', '1_o_menos', 'si', '35-44', 'caro', 'abono', 'nowa', 'extras'],
     espera: { usaria: 'si', acepta_precio: 'caro', oferta_elegida: 'abono', completo: 'si', ultimo_paso: 'fin_sin_whatsapp', wa: false } },
-  { id: 6, p: 'terminal', acc: ['empezar', 'parada', 'rectorado', 'caminando', 'todos_los_dias', 'depende', '18-24', 'caro', 'ninguna', '900', 'wa', 'pv'],
+  { id: 6, p: 'terminal', acc: ['empezar', 'parada', 'rectorado', 'caminando', 'todos_los_dias', 'depende', '18-24', 'caro', 'ninguna', '900', 'wa', 'extras', 'pv'],
     espera: { usaria: 'depende', acepta_precio: 'caro', oferta_elegida: 'ninguna', precio_max: '900', completo: 'si', wa: true } },
-  { id: 7, p: 'estacion', acc: ['empezar', 'parada', 'plaza-moreno', 'bici', '2-3', 'depende', '45+', 'caro', 'ninguna', 'menos_600', 'nowa'],
+  { id: 7, p: 'estacion', acc: ['empezar', 'parada', 'plaza-moreno', 'bici', '2-3', 'depende', '45+', 'caro', 'ninguna', 'menos_600', 'nowa', 'extras'],
     espera: { usaria: 'depende', acepta_precio: 'caro', oferta_elegida: 'ninguna', precio_max: 'menos_600', completo: 'si', wa: false } },
-  { id: 8, p: 'estacion', acc: ['empezar', 'parada', 'terminal', 'caminando', '2-3', 'no', 'inseguro', '25-34', 'wa', 'pv'],
+  { id: 8, p: 'estacion', acc: ['empezar', 'parada', 'terminal', 'caminando', '2-3', 'no', 'inseguro', '25-34', 'wa', 'extras', 'pv'],
     espera: { usaria: 'no', motivo_no: 'inseguro', acepta_precio: '', completo: 'si', wa: true }, sinPrecio: true },
-  { id: 9, p: 'plaza-italia', acc: ['empezar', 'parada', 'plaza-moreno', 'caminando', '1_o_menos', 'no', 'prefiero_caminar', '45+', 'nowa'],
+  { id: 9, p: 'plaza-italia', acc: ['empezar', 'parada', 'plaza-moreno', 'caminando', '1_o_menos', 'no', 'prefiero_caminar', '45+', 'nowa', 'extras'],
     espera: { usaria: 'no', motivo_no: 'prefiero_caminar', completo: 'si', ultimo_paso: 'fin_sin_whatsapp', wa: false }, sinPrecio: true },
   { id: 10, p: 'plaza-italia', acc: ['empezar', 'parada', 'terminal', 'caminando', '2-3', 'si', 'menos_18'],
     espera: { usaria: 'si', edad: 'menos_18', completo: 'si', ultimo_paso: 'fin_menor', wa: false, codigo: '' }, menor: true },
@@ -40,13 +40,13 @@ const SESIONES = [
   { id: 15, p: 'plaza-san-martin', acc: ['empezar', 'parada', 'estacion', 'caminando', '2-3', 'si', '18-24', 'no_pagaria'],
     espera: { completo: 'no', ultimo_paso: 'whatsapp', acepta_precio: 'no_pagaria', wa: false } },
   { id: 16, p: 'bosque', acc: [], espera: { completo: 'no', ultimo_paso: 'inicio', wa: false, timestamp_inicio: '' } },
-  { id: 17, p: null, acc: ['empezar', 'escribir:P MORENO', 'parada', 'otro', 'caminando', '2-3', 'si', '18-24', 'si', 'wa', 'pv'],
+  { id: 17, p: null, acc: ['empezar', 'escribir:P MORENO', 'parada', 'otro', 'caminando', '2-3', 'si', '18-24', 'si', 'wa', 'extras', 'pv'],
     espera: { punto: 'sin-punto', parada: 'plaza-moreno', parada_texto: 'P MORENO', usaria: 'si', acepta_precio: 'si', completo: 'si', wa: true, min_monopatin: 10, min_caminando: 25, precio_mostrado: 1250 } },
-  { id: 18, p: 'plaza-san-martin', refDe: 1, acc: ['empezar', 'parada', 'plaza-moreno', 'caminando', '2-3', 'si', '18-24', 'si', 'wa', 'pv'],
+  { id: 18, p: 'plaza-san-martin', refDe: 1, acc: ['empezar', 'parada', 'plaza-moreno', 'caminando', '2-3', 'si', '18-24', 'si', 'wa', 'extras', 'pv'],
     espera: { usaria: 'si', acepta_precio: 'si', completo: 'si', wa: true } },
-  { id: 19, p: 'terminal', acc: ['empezar', 'parada', 'plaza-moreno', 'uber_remis', '2-3', 'depende', '35-44', 'no_pagaria', 'wa', 'pv'],
-    espera: { usaria: 'depende', acepta_precio: 'no_pagaria', completo: 'si', wa: true } },
-  { id: 20, p: 'estacion', acc: ['empezar', 'parada', 'plaza-moreno', 'offline', 'caminando', '2-3', 'si', 'online', '25-34', 'si', 'wa', 'pv'],
+  { id: 19, p: 'terminal', acc: ['empezar', 'parada', 'plaza-moreno', 'uber_remis', '2-3', 'depende', '35-44', 'no_pagaria', 'wa', 'extra-parcial'],
+    espera: { usaria: 'depende', acepta_precio: 'no_pagaria', completo: 'si', wa: true, motivo_viaje: 'laburo', ultimo_paso: 'extra_vuelta' } },
+  { id: 20, p: 'estacion', acc: ['empezar', 'parada', 'plaza-moreno', 'offline', 'caminando', '2-3', 'si', 'online', '25-34', 'si', 'wa', 'extras', 'pv'],
     espera: { usaria: 'si', acepta_precio: 'si', completo: 'si', wa: true, modo_actual: 'caminando' } }
 ];
 
@@ -111,6 +111,16 @@ async function correrSesion(browser, s, codigos) {
       await page.check('#consent');
       await page.click('#enviar-wa');
       await esperarCambio(antes);
+      continue;
+    }
+    if (a === 'extras' || a === 'extra-parcial') {
+      check(await pantalla() === 'extra_motivo', `S${s.id}: después del WhatsApp vienen las preguntas extra`);
+      const resp = a === 'extras' ? ['facu', 'si', '2-3', 'nunca'] : ['laburo'];
+      for (const v of resp) {
+        const antesX = await pantalla();
+        await page.click(`#pantalla [data-v="${v}"]`);
+        await esperarCambio(antesX);
+      }
       continue;
     }
     if (a === 'nowa') { await page.click('#no-wa'); await esperarCambio(antes); continue; }
@@ -255,6 +265,8 @@ function esperados(filas) {
   check(psm.qr.invitan === 1, 'Plaza San Martín: 1 invitó a un amigo');
   check(ag.puntos['control-calle-8'].abandono.usaria === 1 && ag.puntos['control-calle-8'].abandono.precio === 1, 'Calle 8: abandonos en "usaria" y "precio"');
   check(ag.puntos.bosque.abandono.inicio === 1, 'Bosque: 1 escaneó y no empezó');
+  check(ag.puntos.terminal.abandono.extra_vuelta === 1, 'Terminal: 1 dejó WhatsApp y abandonó en las preguntas extra');
+  check(ag.puntos['plaza-san-martin'].dist.cuadras['2-3'] >= 1 && ag.puntos['plaza-san-martin'].dist.uso_previo.nunca >= 1, 'Agregados incluyen cuadras y uso previo');
   check(ag.puntos['sin-punto'].qr.escanean === 1, 'sin-punto registrado');
 
   console.log('\n== Panel ==');

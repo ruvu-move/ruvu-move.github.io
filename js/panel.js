@@ -18,6 +18,10 @@
       o['menos_' + C.OFERTAS.preciosMaximos[0]] = 'Menos de ' + R.pesos(C.OFERTAS.preciosMaximos[0]);
       return o;
     })(),
+    motivo_viaje: { facu: 'Facu', laburo: 'Laburo', tramite_compras: 'Trámite o compras', juntada_paseo: 'Juntada o paseo' },
+    vuelta: { si: 'Sí', no: 'No, vuelve de otra forma', depende_horario: 'Depende del horario' },
+    cuadras: { '1': '1 cuadra', '2-3': '2 a 3', '4-5': '4 a 5', mas_5: 'Más de 5' },
+    uso_previo: { si_compartido: 'Sí, compartido', si_propio: 'Sí, propio o prestado', nunca: 'Nunca' },
     dia_primer_viaje: { lun: 'Lunes', mar: 'Martes', mie: 'Miércoles', jue: 'Jueves', vie: 'Viernes', sab: 'Sábado', dom: 'Domingo' },
     franja_primer_viaje: { '7-10': '7–10 h', '10-13': '10–13 h', '13-16': '13–16 h', '16-19': '16–19 h', '19-21': '19–21 h' },
     destino: (function () { var o = {}; C.DESTINOS.forEach(function (d) { o[d.id] = d.nombre; }); return o; })(),
@@ -27,14 +31,18 @@
     modo_actual: '¿Cómo ibas a ir?', frecuencia: 'Frecuencia semanal', edad: 'Edad', usaria: '¿Lo usarías en vez de caminar?',
     motivo_no: 'Motivo del "No"', acepta_precio: '¿Pagaría el precio?', oferta_elegida: 'Oferta elegida (dijeron "es caro")',
     precio_max: 'Precio máximo (ninguna oferta)', destino: 'Destino', dia_primer_viaje: 'Día del primer viaje',
-    franja_primer_viaje: 'Horario del primer viaje', parada: '¿En qué parada estás?'
+    franja_primer_viaje: 'Horario del primer viaje', parada: '¿Dónde estás?',
+    motivo_viaje: '¿Para qué es este viaje?', vuelta: '¿Lo usaría para volver?',
+    cuadras: 'Cuadras que caminaría hasta un monopatín', uso_previo: '¿Usó un monopatín eléctrico?'
   };
   var ORDEN_DIST = ['parada', 'modo_actual', 'frecuencia', 'edad', 'oferta_elegida', 'precio_max', 'usaria', 'motivo_no',
-    'acepta_precio', 'destino', 'dia_primer_viaje', 'franja_primer_viaje'];
+    'acepta_precio', 'motivo_viaje', 'vuelta', 'cuadras', 'uso_previo', 'destino', 'dia_primer_viaje', 'franja_primer_viaje'];
   var PASOS = [
     ['inicio', 'Inicio (escaneó, no empezó)'], ['parada', 'Parada'], ['destino', 'Destino'], ['modo', 'Cómo iba a ir'], ['frecuencia', 'Frecuencia'],
     ['usaria', 'Tiempo / ¿lo usarías?'], ['motivo_no', 'Por qué no'], ['edad', 'Edad'], ['precio', 'Precio'],
-    ['oferta', 'Ofertas'], ['precio_max', 'Precio máximo'], ['whatsapp', 'WhatsApp']
+    ['oferta', 'Ofertas'], ['precio_max', 'Precio máximo'], ['whatsapp', 'WhatsApp'],
+    ['extra_motivo', 'Extra: para qué'], ['extra_vuelta', 'Extra: vuelta'], ['extra_cuadras', 'Extra: cuadras'],
+    ['extra_uso', 'Extra: uso previo'], ['primer_viaje', 'Día y horario']
   ];
   /* [clave, etiqueta, base del %]. La base es el paso anterior, salvo donde el
      flujo se bifurca: el precio solo lo ven los que dijeron "sí" o "depende",

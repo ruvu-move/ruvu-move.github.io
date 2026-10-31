@@ -97,7 +97,11 @@ async function sembrar() {
     await ir(page, '[data-v="900"]'); await foto(page, 'whatsapp' + s);
     if (!s) { await page.fill('#wa', '12'); await page.click('#enviar-wa'); await foto(page, 'whatsapp-errores'); }
     await page.fill('#wa', '221 555 1234'); await page.check('#consent');
-    await ir(page, '#enviar-wa'); await foto(page, 'primer-viaje' + s);
+    await ir(page, '#enviar-wa'); await foto(page, 'extra-para-que' + s);
+    await ir(page, '[data-v="facu"]'); await foto(page, 'extra-vuelta' + s);
+    await ir(page, '[data-v="si"]'); await foto(page, 'extra-cuadras' + s);
+    await ir(page, '[data-v="2-3"]'); await foto(page, 'extra-uso-previo' + s);
+    await ir(page, '[data-v="nunca"]'); await foto(page, 'primer-viaje' + s);
     await page.click('[data-v="vie"]'); await page.click('[data-v="16-19"]');
     if (!s) await foto(page, 'primer-viaje-elegido');
     await ir(page, '#listo-pv'); await foto(page, 'final-codigo' + s);
@@ -124,7 +128,9 @@ async function sembrar() {
     await ir(page, '#empezar'); await ir(page, '#siguiente-parada'); await ir(page, '[data-v="plaza-moreno"]'); await ir(page, '[data-v="caminando"]'); await ir(page, '[data-v="2-3"]');
     await ir(page, '[data-v="no"]'); await foto(page, 'motivo-no');
     await ir(page, '[data-v="clima"]'); await ir(page, '[data-v="25-34"]');
-    await ir(page, '#no-wa'); await foto(page, 'final-sin-whatsapp');
+    await ir(page, '#no-wa');
+    for (const v of ['juntada_paseo', 'no', '1', 'si_compartido']) await ir(page, `[data-v="${v}"]`);
+    await foto(page, 'final-sin-whatsapp');
     await ctx.close();
   }
   // Menor de 18

@@ -20,7 +20,7 @@ var COLUMNAS = {
     'session_id', 'timestamp_scan', 'timestamp_inicio', 'timestamp_fin', 'punto', 'ref',
     'parada', 'parada_texto', 'destino', 'modo_actual', 'frecuencia', 'min_monopatin', 'min_caminando', 'precio_mostrado',
     'usaria', 'motivo_no', 'edad', 'acepta_precio', 'oferta_elegida', 'precio_max',
-    'whatsapp', 'consentimiento', 'dia_primer_viaje', 'franja_primer_viaje', 'codigo',
+    'whatsapp', 'consentimiento', 'motivo_viaje', 'vuelta', 'cuadras', 'uso_previo', 'dia_primer_viaje', 'franja_primer_viaje', 'codigo',
     'invito_amigo', 'ultimo_paso', 'completo', 'user_agent', 'actualizado'
   ],
   eventos: ['timestamp', 'event_id', 'session_id', 'tipo', 'punto', 'ref', 'ultimo_paso', 'datos', 'user_agent', 'recibido'],
@@ -32,6 +32,7 @@ var CAMPOS_PERMITIDOS = [
   'timestamp_scan', 'timestamp_inicio', 'timestamp_fin', 'parada', 'parada_texto', 'destino', 'modo_actual', 'frecuencia',
   'min_monopatin', 'min_caminando', 'precio_mostrado', 'usaria', 'motivo_no', 'edad',
   'acepta_precio', 'oferta_elegida', 'precio_max', 'whatsapp', 'consentimiento',
+  'motivo_viaje', 'vuelta', 'cuadras', 'uso_previo',
   'dia_primer_viaje', 'franja_primer_viaje', 'codigo', 'invito_amigo', 'ultimo_paso', 'completo'
 ];
 var CAMPOS_FECHA = { timestamp_scan: 1, timestamp_inicio: 1, timestamp_fin: 1, timestamp: 1, recibido: 1, actualizado: 1 };
@@ -183,7 +184,8 @@ function doGet(e) {
 }
 
 var DISTRIBUCIONES = ['parada', 'destino', 'modo_actual', 'frecuencia', 'usaria', 'motivo_no', 'edad',
-  'acepta_precio', 'oferta_elegida', 'precio_max', 'dia_primer_viaje', 'franja_primer_viaje'];
+  'acepta_precio', 'oferta_elegida', 'precio_max', 'motivo_viaje', 'vuelta', 'cuadras', 'uso_previo',
+  'dia_primer_viaje', 'franja_primer_viaje'];
 
 function agregados(desde, hasta) {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
@@ -231,10 +233,10 @@ function agregados(desde, hasta) {
       var v = f[c[k]];
       if (v !== '' && v !== null && v !== undefined) p.dist[k][v] = (p.dist[k][v] || 0) + 1;
     });
-    if (f[c.completo] !== 'si') {
-      var paso = f[c.ultimo_paso] || 'inicio';
-      p.abandono[paso] = (p.abandono[paso] || 0) + 1;
-    }
+    // abandono: no llegó a una pantalla final (incluye a quien dejó el WhatsApp
+    // y no terminó las preguntas extra o el día y horario)
+    var paso = f[c.ultimo_paso] || 'inicio';
+    if (!FINALES[paso]) p.abandono[paso] = (p.abandono[paso] || 0) + 1;
   });
 
   // --- re-escaneos (gente que ya había participado)
@@ -261,6 +263,8 @@ function agregados(desde, hasta) {
 
   return { ok: true, generado: new Date().toISOString(), puntos: puntos };
 }
+
+var FINALES = { fin: 1, fin_sin_whatsapp: 1, fin_menor: 1 };
 
 function embudoVacio() {
   return {
