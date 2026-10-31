@@ -329,3 +329,15 @@ h1:focus, h2:focus { outline: none; }
   .precio-grande { font-size: 46px; }
   .btn-verde { font-size: 15px; }
 }
+
+/* ---------- Parada (autocompletado) ---------- */
+.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+#parada { font-family: var(--fuente); font-weight: 800; font-size: 19px; }
+.campo input[type="text"] {
+  width: 100%; min-height: 60px; padding: 12px 18px; border-radius: var(--radio);
+  border: 2px solid var(--grafito); background: var(--superficie); color: var(--ruvu-blanco);
+}
+.campo input[type="text"]:focus { outline: none; border-color: var(--ruvu-verde); }
+.sugerencias { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; }
+.sugerencia { flex-direction: row; justify-content: space-between; align-items: center; min-height: 52px; }
+.sugerencia i { font-style: normal; color: var(--ruvu-verde); font-weight: 800; }

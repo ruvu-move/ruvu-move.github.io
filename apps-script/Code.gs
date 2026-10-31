@@ -18,7 +18,7 @@ var PIN = '2026';
 var COLUMNAS = {
   respuestas: [
     'session_id', 'timestamp_scan', 'timestamp_inicio', 'timestamp_fin', 'punto', 'ref',
-    'destino', 'modo_actual', 'frecuencia', 'min_monopatin', 'min_caminando', 'precio_mostrado',
+    'parada', 'parada_texto', 'destino', 'modo_actual', 'frecuencia', 'min_monopatin', 'min_caminando', 'precio_mostrado',
     'usaria', 'motivo_no', 'edad', 'acepta_precio', 'oferta_elegida', 'precio_max',
     'whatsapp', 'consentimiento', 'dia_primer_viaje', 'franja_primer_viaje', 'codigo',
     'invito_amigo', 'ultimo_paso', 'completo', 'user_agent', 'actualizado'
@@ -29,7 +29,7 @@ var COLUMNAS = {
 
 // Campos que la encuesta puede escribir en "respuestas"
 var CAMPOS_PERMITIDOS = [
-  'timestamp_scan', 'timestamp_inicio', 'timestamp_fin', 'destino', 'modo_actual', 'frecuencia',
+  'timestamp_scan', 'timestamp_inicio', 'timestamp_fin', 'parada', 'parada_texto', 'destino', 'modo_actual', 'frecuencia',
   'min_monopatin', 'min_caminando', 'precio_mostrado', 'usaria', 'motivo_no', 'edad',
   'acepta_precio', 'oferta_elegida', 'precio_max', 'whatsapp', 'consentimiento',
   'dia_primer_viaje', 'franja_primer_viaje', 'codigo', 'invito_amigo', 'ultimo_paso', 'completo'
@@ -182,7 +182,7 @@ function doGet(e) {
   return ContentService.createTextOutput(txt).setMimeType(ContentService.MimeType.JSON);
 }
 
-var DISTRIBUCIONES = ['destino', 'modo_actual', 'frecuencia', 'usaria', 'motivo_no', 'edad',
+var DISTRIBUCIONES = ['parada', 'destino', 'modo_actual', 'frecuencia', 'usaria', 'motivo_no', 'edad',
   'acepta_precio', 'oferta_elegida', 'precio_max', 'dia_primer_viaje', 'franja_primer_viaje'];
 
 function agregados(desde, hasta) {

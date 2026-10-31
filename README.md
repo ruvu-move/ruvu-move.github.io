@@ -24,6 +24,8 @@ capturas/           Capturas mobile de cada pantalla + carteles-A5.pdf
 
 ## 1. Google Sheet y Apps Script
 
+> **Atajo:** en `planilla/RUVU-respuestas.xlsx` está la planilla lista (hojas `respuestas`, `eventos`, `conteo`, un `Resumen` con fórmulas y la lista de `Paradas`). Subila a Google Drive → *Abrir con Hojas de cálculo de Google* → *Archivo → Guardar como Hojas de cálculo de Google*, y seguí desde el paso 2. La hoja *Instrucciones* repite estos pasos.
+
 1. Entrá a [sheets.new](https://sheets.new) y creá una planilla, por ejemplo **"RUVU encuesta"**.
 2. En la planilla: **Extensiones → Apps Script**.
 3. Borrá lo que haya en `Código.gs` y pegá todo el contenido de [`apps-script/Code.gs`](apps-script/Code.gs).
@@ -59,6 +61,20 @@ capturas/           Capturas mobile de cada pantalla + carteles-A5.pdf
 ---
 
 ## 2. Publicar en GitHub Pages
+
+### Dirección que se ve al escanear: `ruvu-lp.github.io`
+
+Para que al escanear no aparezca el usuario personal, el sitio vive en una **organización** de GitHub (gratis):
+
+1. Crear la organización: https://github.com/account/organizations/new?plan=free → nombre **`ruvu-lp`** (si está tomado, elegí otro y cambiá `SITE_URL` en `config.js` + `npm run qr`).
+2. En el repo actual: **Settings → General → Danger Zone → Transfer ownership** → a `ruvu-lp`.
+3. Ya en la organización: **Settings → General → Repository name** → **`ruvu-lp.github.io`** → *Rename*.
+4. **Settings → Pages** → *Deploy from a branch* → `main` / `(root)` → *Save*.
+5. En 1–2 minutos queda en **https://ruvu-lp.github.io/** (sin `/ruvu-encuesta`).
+
+Los QR de `/qr` ya apuntan a esa dirección.
+
+### Pasos generales
 
 1. Creá una cuenta en [github.com](https://github.com) si no tenés.
 2. **New repository** → nombre `ruvu-encuesta` → **Public** → *Create repository*.
@@ -118,6 +134,14 @@ Cómo se calcula el viaje:
 
 ---
 
+## Parada ("¿En qué parada estás?")
+
+Primera pregunta después de *Empezar*. La persona escribe libremente y se autocompleta con `PARADAS` de `config.js`:
+- `claves`: palabras que disparan la sugerencia. No importan mayúsculas, tildes ni "plaza", "pza", "facultad de"…: `moreno`, `MORENO`, `P Moreno` → **Plaza Moreno**; `italia` → **Plaza Italia**; `tren` → **Estación de tren**; `8` → **Calle 8**.
+- Si escanea el QR de un punto, la parada ya aparece completa (campo `parada` de cada punto).
+- Se guarda `parada` (id reconocido, u `otra`) y `parada_texto` (lo que escribió). Si la parada tiene coordenadas, desde ahí se calculan minutos y precio, y no se ofrece como destino un lugar a menos de 300 m.
+- Para sumar una parada o una palabra clave, agregala en `PARADAS` (coordenadas aproximadas: TODO).
+
 ## 4. QR y carteles
 
 Requiere [Node.js](https://nodejs.org) (versión 18 o más).
@@ -127,7 +151,7 @@ npm install
 npm run qr
 ```
 
-Genera en `/qr/` un `<slug>.png` (1200 px) y un `<slug>.svg` por punto, negro sobre blanco, con margen y corrección de errores media. Cada QR apunta a `SITE_URL?p=<slug>`. Si `SITE_URL` todavía dice TODO te avisa.
+Genera en `/qr/` un `<slug>.png` (1200 px) y un `<slug>.svg` por punto, más **`general.png/.svg`** (QR sin punto, sirve en cualquier lugar: la persona escribe su parada), negro sobre blanco, con margen y corrección de errores media. Cada QR apunta a `SITE_URL?p=<slug>`. Si `SITE_URL` todavía dice TODO te avisa.
 
 Después subí la carpeta `qr/` a GitHub junto con lo demás y abrí **`carteles.html`** (en tu sitio o local):
 - una hoja A5 por punto: PRÓXIMAMENTE · logo · "Escaneá para saber cuánto tardarías" · QR grande · nombre del punto chiquito abajo;

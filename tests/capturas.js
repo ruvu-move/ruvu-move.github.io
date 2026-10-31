@@ -85,7 +85,8 @@ async function sembrar() {
     const s = w === 320 ? '-320' : '';
     await page.goto(BASE + '/?p=plaza-san-martin');
     await foto(page, 'inicio' + s);
-    await ir(page, '#empezar'); await foto(page, 'destino' + s);
+    await ir(page, '#empezar'); await foto(page, 'parada-desde-qr' + s);
+    await ir(page, '#siguiente-parada'); await foto(page, 'destino' + s);
     await ir(page, '[data-v="terminal"]'); await foto(page, 'modo' + s);
     await ir(page, '[data-v="caminando"]'); await foto(page, 'frecuencia' + s);
     await ir(page, '[data-v="2-3"]'); await foto(page, 'usaria' + s);
@@ -105,11 +106,22 @@ async function sembrar() {
     await ctx.close();
   }
 
+  // QR general: la persona escribe la parada y se autocompleta
+  {
+    const { ctx, page } = await nuevo();
+    await page.goto(BASE + '/');
+    await ir(page, '#empezar'); await foto(page, 'parada-vacia');
+    await page.type('#parada', 'san mar'); await foto(page, 'parada-escribiendo');
+    await page.fill('#parada', ''); await page.type('#parada', 'P Moreno'); await foto(page, 'parada-autocompletada');
+    await ir(page, '#siguiente-parada'); await foto(page, 'destino-desde-plaza-moreno');
+    await ctx.close();
+  }
+
   // Camino del "No"
   {
     const { ctx, page } = await nuevo();
     await page.goto(BASE + '/?p=bosque');
-    await ir(page, '#empezar'); await ir(page, '[data-v="plaza-moreno"]'); await ir(page, '[data-v="caminando"]'); await ir(page, '[data-v="2-3"]');
+    await ir(page, '#empezar'); await ir(page, '#siguiente-parada'); await ir(page, '[data-v="plaza-moreno"]'); await ir(page, '[data-v="caminando"]'); await ir(page, '[data-v="2-3"]');
     await ir(page, '[data-v="no"]'); await foto(page, 'motivo-no');
     await ir(page, '[data-v="clima"]'); await ir(page, '[data-v="25-34"]');
     await ir(page, '#no-wa'); await foto(page, 'final-sin-whatsapp');
@@ -119,7 +131,7 @@ async function sembrar() {
   {
     const { ctx, page } = await nuevo();
     await page.goto(BASE + '/?p=terminal');
-    await ir(page, '#empezar'); await ir(page, '[data-v="plaza-moreno"]'); await ir(page, '[data-v="micro"]'); await ir(page, '[data-v="2-3"]');
+    await ir(page, '#empezar'); await ir(page, '#siguiente-parada'); await ir(page, '[data-v="plaza-moreno"]'); await ir(page, '[data-v="micro"]'); await ir(page, '[data-v="2-3"]');
     await ir(page, '[data-v="si"]'); await ir(page, '[data-v="menos_18"]'); await foto(page, 'final-menor');
     await page.goto(BASE + '/privacidad.html'); await foto(page, 'privacidad', true);
     await ctx.close();

@@ -1,37 +1,42 @@
 [
   {
+    "slug": "general",
+    "nombre": "QR general (cualquier parada)",
+    "url": "https://ruvu-lp.github.io/"
+  },
+  {
     "slug": "plaza-san-martin",
     "nombre": "Plaza San Martín",
-    "url": "https://nicojesi2026-collab.github.io/ruvu-encuesta/?p=plaza-san-martin"
+    "url": "https://ruvu-lp.github.io/?p=plaza-san-martin"
   },
   {
     "slug": "bosque",
     "nombre": "Paseo del Bosque",
-    "url": "https://nicojesi2026-collab.github.io/ruvu-encuesta/?p=bosque"
+    "url": "https://ruvu-lp.github.io/?p=bosque"
   },
   {
     "slug": "terminal",
     "nombre": "Terminal de ómnibus",
-    "url": "https://nicojesi2026-collab.github.io/ruvu-encuesta/?p=terminal"
+    "url": "https://ruvu-lp.github.io/?p=terminal"
   },
   {
     "slug": "estacion",
     "nombre": "Estación de trenes",
-    "url": "https://nicojesi2026-collab.github.io/ruvu-encuesta/?p=estacion"
+    "url": "https://ruvu-lp.github.io/?p=estacion"
   },
   {
     "slug": "plaza-italia",
     "nombre": "Plaza Italia",
-    "url": "https://nicojesi2026-collab.github.io/ruvu-encuesta/?p=plaza-italia"
+    "url": "https://ruvu-lp.github.io/?p=plaza-italia"
   },
   {
     "slug": "facultad",
     "nombre": "Puerta de facultad",
-    "url": "https://nicojesi2026-collab.github.io/ruvu-encuesta/?p=facultad"
+    "url": "https://ruvu-lp.github.io/?p=facultad"
   },
   {
     "slug": "control-calle-8",
     "nombre": "Calle 8 (punto de control)",
-    "url": "https://nicojesi2026-collab.github.io/ruvu-encuesta/?p=control-calle-8"
+    "url": "https://ruvu-lp.github.io/?p=control-calle-8"
   }
 ]

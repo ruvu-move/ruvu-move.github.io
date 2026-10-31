@@ -41,7 +41,7 @@
 </head>
 <body>
   <div class="ayuda">
-    <b>Carteles A5 · uno por punto.</b> Antes de imprimir: poné la URL real en <code>SITE_URL</code> de config.js y corré <code>npm run qr</code>.
+    <b>Carteles A5.</b> El primero es el <b>QR general</b> (sirve en cualquier lugar: la persona escribe su parada); después, uno por punto. Antes de imprimir: poné la URL real en <code>SITE_URL</code> de config.js y corré <code>npm run qr</code>.
     En el diálogo de impresión elegí tamaño <b>A5</b>, márgenes <b>ninguno</b> y escala <b>100%</b>.
     Probá escanear un cartel impreso antes de llevarlo a la calle.<br><br>
     <button type="button" onclick="window.print()">Imprimir</button>
@@ -53,7 +53,8 @@
     (function () {
       var C = window.RUVU_CONFIG;
       function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
-      document.getElementById('hojas').innerHTML = C.PUNTOS.map(function (p) {
+      var hojas = [{ slug: 'general', nombre: 'QR general' }].concat(C.PUNTOS);
+      document.getElementById('hojas').innerHTML = hojas.map(function (p) {
         return '<section class="hoja">' +
           '<div class="prox">PRÓXIMAMENTE</div>' +
           '<div class="logo" data-logo>RUVU.</div>' +

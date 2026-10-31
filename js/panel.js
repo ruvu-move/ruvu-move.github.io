@@ -20,18 +20,19 @@
     })(),
     dia_primer_viaje: { lun: 'Lunes', mar: 'Martes', mie: 'Miércoles', jue: 'Jueves', vie: 'Viernes', sab: 'Sábado', dom: 'Domingo' },
     franja_primer_viaje: { '7-10': '7–10 h', '10-13': '10–13 h', '13-16': '13–16 h', '16-19': '16–19 h', '19-21': '19–21 h' },
-    destino: (function () { var o = {}; C.DESTINOS.forEach(function (d) { o[d.id] = d.nombre; }); return o; })()
+    destino: (function () { var o = {}; C.DESTINOS.forEach(function (d) { o[d.id] = d.nombre; }); return o; })(),
+    parada: (function () { var o = {}; (C.PARADAS || []).forEach(function (d) { o[d.id] = d.nombre; }); o.otra = 'Otra (no coincidió)'; return o; })()
   };
   var TITULOS = {
     modo_actual: '¿Cómo ibas a ir?', frecuencia: 'Frecuencia semanal', edad: 'Edad', usaria: '¿Lo usarías en vez de caminar?',
     motivo_no: 'Motivo del "No"', acepta_precio: '¿Pagaría el precio?', oferta_elegida: 'Oferta elegida (dijeron "es caro")',
     precio_max: 'Precio máximo (ninguna oferta)', destino: 'Destino', dia_primer_viaje: 'Día del primer viaje',
-    franja_primer_viaje: 'Horario del primer viaje'
+    franja_primer_viaje: 'Horario del primer viaje', parada: '¿En qué parada estás?'
   };
-  var ORDEN_DIST = ['modo_actual', 'frecuencia', 'edad', 'oferta_elegida', 'precio_max', 'usaria', 'motivo_no',
+  var ORDEN_DIST = ['parada', 'modo_actual', 'frecuencia', 'edad', 'oferta_elegida', 'precio_max', 'usaria', 'motivo_no',
     'acepta_precio', 'destino', 'dia_primer_viaje', 'franja_primer_viaje'];
   var PASOS = [
-    ['inicio', 'Inicio (escaneó, no empezó)'], ['destino', 'Destino'], ['modo', 'Cómo iba a ir'], ['frecuencia', 'Frecuencia'],
+    ['inicio', 'Inicio (escaneó, no empezó)'], ['parada', 'Parada'], ['destino', 'Destino'], ['modo', 'Cómo iba a ir'], ['frecuencia', 'Frecuencia'],
     ['usaria', 'Tiempo / ¿lo usarías?'], ['motivo_no', 'Por qué no'], ['edad', 'Edad'], ['precio', 'Precio'],
     ['oferta', 'Ofertas'], ['precio_max', 'Precio máximo'], ['whatsapp', 'WhatsApp']
   ];
@@ -50,7 +51,7 @@
   }
   function nombrePunto(slug) {
     if (slug === 'total') return 'Total';
-    if (slug === 'sin-punto') return 'Sin punto (link sin ?p=)';
+    if (slug === 'sin-punto') return 'QR general (sin punto)';
     var p = C.PUNTOS.filter(function (x) { return x.slug === slug; })[0];
     return p ? p.nombre : slug;
   }
@@ -136,6 +137,8 @@
     ORDEN_DIST.forEach(function (k) {
       var d = p.dist[k] || {}, et = ETIQ[k] || {};
       var claves = Object.keys(et).concat(Object.keys(d).filter(function (v) { return !(v in et); }));
+      // listas largas (paradas, destinos): solo lo que tiene respuestas, de mayor a menor
+      if (claves.length > 12) claves = claves.filter(function (v) { return d[v]; }).sort(function (a, b) { return d[b] - d[a]; });
       var total = claves.reduce(function (s, v) { return s + (d[v] || 0); }, 0);
       document.getElementById('n-' + k).textContent = total + ' respuestas';
       barras('d-' + k, claves.map(function (v) { return { lbl: et[v] || v, n: d[v] || 0, extra: pct(d[v] || 0, total) }; }));
@@ -271,7 +274,7 @@
     var sel = document.getElementById('sel-punto');
     sel.innerHTML = '<option value="total">Total</option>' + C.PUNTOS.map(function (p) {
       return '<option value="' + p.slug + '">' + esc(p.nombre) + '</option>';
-    }).join('') + '<option value="sin-punto">Sin punto</option>';
+    }).join('') + '<option value="sin-punto">QR general</option>';
     sel.onchange = function () { if (datos) render(); };
     document.getElementById('actualizar').onclick = cargar;
     document.getElementById('csv').onclick = exportarCsv;

@@ -75,6 +75,43 @@
     return { km: km, minMonopatin: mono, minCaminando: cam, precio: precioPorMinutos(mono) };
   }
 
+  /* ---------- Paradas: autocompletado por palabras clave ----------
+     "moreno", "MORENO", "P Moreno" o "pza. moreno" → Plaza Moreno.
+     Sin mayúsculas, tildes ni palabras de relleno ("plaza", "facultad de"...). */
+  var RELLENO = { plaza: 1, pza: 1, plz: 1, pl: 1, p: 1, estoy: 1, en: 1, la: 1, el: 1, de: 1, del: 1,
+    los: 1, las: 1, facultad: 1, fac: 1, facu: 1, frente: 1, a: 1, al: 1 };
+
+  function normalizar(txt) {
+    return String(txt || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '')
+      .replace(/[^a-z0-9]+/g, ' ').trim().split(' ')
+      .filter(function (w) { return w && !RELLENO[w]; }).join(' ');
+  }
+
+  function puntaje(q, c) {
+    if (!q || !c) return 0;
+    if (q === c) return 100;
+    if ((' ' + q + ' ').indexOf(' ' + c + ' ') >= 0) return 80 + c.length / 100;
+    if (q.length >= 3 && c.indexOf(q) === 0) return 60;
+    if (q.length >= 3 && (' ' + c).indexOf(' ' + q) >= 0) return 55;
+    if (q.length >= 4 && c.indexOf(q) >= 0) return 40;
+    return 0;
+  }
+
+  /* Devuelve [{parada, puntaje}] ordenado de mejor a peor. */
+  function buscarParadas(texto, max) {
+    var q = normalizar(texto);
+    if (!q) return [];
+    return (C.PARADAS || []).map(function (p) {
+      var mejor = 0;
+      [p.nombre].concat(p.claves || []).forEach(function (c) {
+        mejor = Math.max(mejor, puntaje(q, normalizar(c)));
+      });
+      return { parada: p, puntaje: mejor };
+    }).filter(function (r) { return r.puntaje > 0; })
+      .sort(function (a, b) { return b.puntaje - a.puntaje; })
+      .slice(0, max || 4);
+  }
+
   function pesos(n) {
     return '$' + Math.round(n).toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.');
   }
@@ -232,6 +269,9 @@
     uid: uid,
     generarCodigo: generarCodigo,
     calcularViaje: calcularViaje,
+    haversineKm: haversineKm,
+    buscarParadas: buscarParadas,
+    normalizar: normalizar,
     precioPorMinutos: precioPorMinutos,
     redondearPrecio: redondearPrecio,
     pesos: pesos,

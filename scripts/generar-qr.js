@@ -1,6 +1,6 @@
 /* Genera un QR por punto en /qr/ (PNG + SVG, negro sobre blanco, con margen).
    Uso: npm run qr
-   Toma SITE_URL y PUNTOS de config.js. Cada QR apunta a <SITE_URL>?p=<slug> */
+   Toma SITE_URL y PUNTOS de config.js. Cada QR apunta a <SITE_URL>?p=<slug>, y qr/general.* a <SITE_URL> sin punto. */
 const fs = require('fs');
 const path = require('path');
 const vm = require('vm');
@@ -28,8 +28,10 @@ fs.mkdirSync(dir, { recursive: true });
 
 (async () => {
   const lista = [];
-  for (const p of C.PUNTOS) {
-    const url = base + '?p=' + encodeURIComponent(p.slug);
+  // QR general (sin ?p=): sirve para cualquier lugar, la persona escribe en qué parada está
+  const todos = [{ slug: 'general', nombre: 'QR general (cualquier parada)', general: true }].concat(C.PUNTOS);
+  for (const p of todos) {
+    const url = p.general ? base : base + '?p=' + encodeURIComponent(p.slug);
     await QRCode.toFile(path.join(dir, p.slug + '.png'), url, { ...opciones, type: 'png', width: 1200 });
     fs.writeFileSync(path.join(dir, p.slug + '.svg'), await QRCode.toString(url, { ...opciones, type: 'svg' }));
     lista.push({ slug: p.slug, nombre: p.nombre, url });

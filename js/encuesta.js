@@ -108,9 +108,90 @@
     clase: 'inicio',
     montar: function () {
       document.getElementById('empezar').onclick = function () {
-        guardar({ timestamp_inicio: new Date().toISOString() }, 'destino');
-        ir('destino');
+        guardar({ timestamp_inicio: new Date().toISOString() }, 'parada');
+        ir('parada');
       };
+    }
+  };
+
+  /* Parada: texto libre con autocompletado por palabras clave (config PARADAS).
+     Si vino por el QR de un punto, ya aparece completa. */
+  var paradaElegida = null; // objeto de PARADAS o null si no coincidió ninguna
+  var origen = punto;       // desde dónde se calculan minutos y precio
+
+  function paradaPorId(id) {
+    return (C.PARADAS || []).filter(function (p) { return p.id === id; })[0] || null;
+  }
+
+  P.parada = {
+    p: 0.05,
+    html: function () {
+      return '<h2>¿En qué parada estás?</h2>' +
+        '<p class="sub">Escribí la plaza, esquina o lugar. Ej: Plaza Moreno, la Terminal, Calle 8.</p>' +
+        '<form id="form-parada" novalidate autocomplete="off">' +
+        '<div class="campo"><label for="parada" class="sr">Parada</label>' +
+        '<input id="parada" type="text" inputmode="text" enterkeyhint="next" autocapitalize="words" ' +
+        'spellcheck="false" placeholder="Ej: Plaza Moreno" maxlength="60" role="combobox" ' +
+        'aria-autocomplete="list" aria-controls="sugerencias" aria-expanded="false"></div>' +
+        '<div class="sugerencias" id="sugerencias" role="listbox" aria-label="Paradas sugeridas"></div>' +
+        '<div class="empuje"></div><div class="abajo">' +
+        '<button type="submit" class="btn btn-verde" id="siguiente-parada" disabled>Siguiente</button></div></form>';
+    },
+    montar: function () {
+      var input = document.getElementById('parada');
+      var lista = document.getElementById('sugerencias');
+      var btn = document.getElementById('siguiente-parada');
+      var resultados = [];
+      var elegida = null; // parada confirmada (tocada o completada sola)
+      var escrito = '';   // lo que escribió la persona, tal cual (se guarda en parada_texto)
+
+      function pintar() {
+        lista.innerHTML = resultados.map(function (res, i) {
+          var sel = elegida && elegida.id === res.parada.id;
+          return '<button type="button" class="btn btn-opcion sugerencia' + (sel ? ' elegida' : '') + '" role="option" ' +
+            'aria-selected="' + (sel ? 'true' : 'false') + '" data-i="' + i + '">' +
+            '<span>' + esc(res.parada.nombre) + '</span>' + (sel ? '<i aria-hidden="true">✓</i>' : '') + '</button>';
+        }).join('');
+        input.setAttribute('aria-expanded', resultados.length ? 'true' : 'false');
+        btn.disabled = !input.value.trim();
+      }
+
+      function buscar() {
+        resultados = R.buscarParadas(input.value, 4);
+        var top = resultados[0];
+        // autocompleta si escribió una palabra clave (o si hay una sola opción posible)
+        elegida = top && (top.puntaje >= 80 || (resultados.length === 1 && top.puntaje >= 55)) ? top.parada : null;
+        pintar();
+      }
+
+      input.addEventListener('input', function () { escrito = input.value; buscar(); });
+      // al salir del campo, si hay una parada elegida se completa el nombre entero
+      input.addEventListener('blur', function () { if (elegida) input.value = elegida.nombre; });
+      lista.addEventListener('click', function (e) {
+        var b = e.target.closest('.sugerencia');
+        if (!b) return;
+        elegida = resultados[Number(b.getAttribute('data-i'))].parada;
+        escrito = escrito || elegida.nombre;
+        input.value = elegida.nombre;
+        resultados = [{ parada: elegida, puntaje: 100 }];
+        pintar();
+      });
+      document.getElementById('form-parada').addEventListener('submit', function (e) {
+        e.preventDefault();
+        var texto = (escrito || input.value).trim();
+        if (!input.value.trim()) return;
+        paradaElegida = elegida;
+        origen = elegida && typeof elegida.lat === 'number' ? elegida : punto;
+        guardar({ parada: elegida ? elegida.id : 'otra', parada_texto: texto.slice(0, 60) }, 'destino');
+        ir('destino');
+      });
+
+      // Volver a esta pantalla o venir de un QR con punto: arranca completa
+      var previa = paradaElegida || (punto && paradaPorId(punto.parada));
+      if (r.parada_texto) input.value = escrito = r.parada_texto;
+      else if (previa) input.value = escrito = previa.nombre;
+      if (input.value) buscar();
+      if (previa && (!r.parada_texto || r.parada === previa.id)) { elegida = previa; pintar(); }
     }
   };
 
@@ -118,13 +199,15 @@
     p: 0.1,
     html: function () {
       var lista = C.DESTINOS.filter(function (d) {
-        return !(d.ocultarEn || []).some(function (s) { return s === puntoSlug; });
+        // no ofrecer como destino el mismo lugar donde está (a menos de 300 m)
+        if (origen && typeof d.lat === 'number' && R.haversineKm(origen, d) < 0.3) return false;
+        return !(origen === punto && (d.ocultarEn || []).some(function (s) { return s === puntoSlug; }));
       }).map(function (d) { return [d.id, esc(d.nombre)]; });
       return '<h2>¿A dónde vas ahora?</h2>' + opciones(lista);
     },
     elegir: function (v) {
       var dest = C.DESTINOS.filter(function (d) { return d.id === v; })[0];
-      var viaje = R.calcularViaje(punto, dest);
+      var viaje = R.calcularViaje(origen, dest);
       guardar({
         destino: v,
         min_monopatin: viaje.minMonopatin,
