@@ -360,3 +360,34 @@ h1:focus, h2:focus { outline: none; }
 @keyframes buho-globo { from { opacity: 0; transform: translateX(-6px) scale(.96); } to { opacity: 1; transform: none; } }
 @media (max-width: 340px) { .buho img { width: 76px; } .buho .globo { font-size: 14px; } }
 @media (prefers-reduced-motion: reduce) { .buho img, .buho .globo { animation: none; } }
+
+/* ---------- "Otro" con texto (¿Para qué es este viaje?) ---------- */
+.otro-motivo { margin-top: 14px; display: grid; gap: 10px; }
+.otro-motivo .campo label { font-size: 15px; }
+#motivo-otro { font-family: var(--fuente); font-weight: 700; font-size: 18px; }
+
+/* ---------- Búho que llega en monopatín (pantallas finales) ---------- */
+.buho-moto {
+  position: relative;
+  width: 210px;
+  height: 172px;
+  margin: 0 auto 10px;
+  animation: moto-llega 1.5s cubic-bezier(.22,.9,.25,1) both;
+}
+.buho-moto picture { position: absolute; left: 34px; bottom: 36px; }
+.buho-moto img { display: block; width: 98px; height: auto; transform-origin: 50% 100%; animation: buho-salto 2.4s ease-in-out 1.6s infinite; }
+.buho-moto .moto { position: absolute; left: 0; bottom: 0; width: 210px; height: auto; overflow: visible; }
+.buho-moto .rueda { transform-box: fill-box; transform-origin: center; animation: rueda-gira .35s linear 4; }
+.buho-moto .estela { animation: estela 1.5s ease-out both; }
+@keyframes moto-llega {
+  0% { transform: translateX(-115vw) rotate(0); }
+  72% { transform: translateX(10px) rotate(0); }
+  84% { transform: translateX(-4px) rotate(-4deg); }
+  100% { transform: translateX(0) rotate(0); }
+}
+@keyframes rueda-gira { to { transform: rotate(360deg); } }
+@keyframes estela { 0%, 60% { opacity: 1; } 100% { opacity: 0; } }
+@media (prefers-reduced-motion: reduce) {
+  .buho-moto, .buho-moto img, .buho-moto .rueda { animation: none; }
+  .buho-moto .estela { opacity: 0; animation: none; }
+}
