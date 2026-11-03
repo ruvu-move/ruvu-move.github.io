@@ -224,11 +224,32 @@
   }
 
   /* ---------- JSONP para leer del Apps Script (doGet) ---------- */
+  /* Lectura de datos para el panel. Primero con fetch SIN cookies: así anda aunque
+     el navegador tenga varias cuentas de Google abiertas (con JSONP fallaba).
+     El Apps Script puede tardar 20-40 s en calcular el resumen: esperamos hasta 60 s. */
   function jsonp(params, ms) {
+    ms = ms || 60000;
+    var q = Object.keys(params).map(function (k) {
+      return encodeURIComponent(k) + '=' + encodeURIComponent(params[k]);
+    }).join('&');
+    var url = C.API_URL + (C.API_URL.indexOf('?') >= 0 ? '&' : '?') + q;
+    if (!window.fetch) return jsonpScript(params, ms);
+    var ctrl = window.AbortController ? new AbortController() : null;
+    var t = setTimeout(function () { if (ctrl) ctrl.abort(); }, ms);
+    return fetch(url, { credentials: 'omit', cache: 'no-store', signal: ctrl ? ctrl.signal : undefined })
+      .then(function (r) { clearTimeout(t); return r.json(); })
+      .catch(function (err) {
+        clearTimeout(t);
+        if (err && err.name === 'AbortError') throw new Error('tiempo agotado');
+        return jsonpScript(params, ms); // plan B: el método viejo
+      });
+  }
+
+  function jsonpScript(params, ms) {
     return new Promise(function (resolve, reject) {
       var cb = 'ruvu_cb_' + uid(8);
       var s = document.createElement('script');
-      var t = setTimeout(function () { limpiar(); reject(new Error('tiempo agotado')); }, ms || 20000);
+      var t = setTimeout(function () { limpiar(); reject(new Error('tiempo agotado')); }, ms || 60000);
       function limpiar() { clearTimeout(t); delete window[cb]; if (s.parentNode) s.parentNode.removeChild(s); }
       window[cb] = function (data) { limpiar(); resolve(data); };
       var q = Object.keys(params).map(function (k) {
