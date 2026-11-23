@@ -224,8 +224,9 @@ async function recorrer(page, acciones) {
     const vistas = [];
     await recorrer(page, ['empezar', 'donde:calle-8', 'estacion', 'caminando', '1_o_menos', 'no']);
     check(await pantalla(page) === 'motivo_no', 'pregunta el motivo');
-    check(await page.textContent('#falta') === '¡Última pregunta para tu viaje gratis!', 'si dice "No", la cuenta descuenta el precio');
+    check(await page.textContent('#falta') === 'Te faltan 2 preguntas para tu viaje gratis', 'si dice "No": faltan el motivo y la edad (sin precio)');
     await recorrer(page, ['clima']);
+    check(await page.textContent('#falta') === '¡Última pregunta para tu viaje gratis!', 'la edad es la última');
     vistas.push(await pantalla(page));
     check(vistas[0] === 'edad', 'después del motivo va directo a edad (sin precio)');
     await recorrer(page, ['45+', 'sinwa']);

@@ -166,7 +166,7 @@
     var i = lista.indexOf(id), condicional = DESPUES_DE[id];
     if (condicional) i = lista.indexOf(condicional) + 1;   // ya respondió la anterior
     else if (i < 0) return null;
-    var faltan = lista.length - i;                          // incluye la pantalla actual
+    var faltan = lista.length - i + (condicional ? 1 : 0);  // incluye la pantalla actual
     return { pct: Math.max(0.04, i / lista.length), faltan: faltan };
   }
   function textoFalta(faltan) {
