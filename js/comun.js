@@ -59,20 +59,25 @@
     return Math.ceil(p / C.TARIFA.redondeo) * C.TARIFA.redondeo;
   }
 
-  /* punto y destino: objetos de config. Si falta alguna coordenada se usa "Otro". */
-  function calcularViaje(punto, destino) {
-    var t = C.TARIFA, mono, cam, km = null;
-    var ok = punto && destino && !destino.otro &&
-      typeof punto.lat === 'number' && typeof destino.lat === 'number';
-    if (ok) {
-      km = haversineKm(punto, destino) * t.factorGrilla;
-      mono = Math.max(t.minMonopatin, Math.ceil(km / t.velMonopatin * 60));
-      cam = Math.max(1, Math.round(km / t.velCaminando * 60));
-    } else {
-      mono = t.otro.monopatin;
-      cam = t.otro.caminando;
-    }
+  function viajePorKm(km) {
+    var t = C.TARIFA;
+    var mono = Math.max(t.minMonopatin, Math.ceil(km / t.velMonopatin * 60));
+    var cam = Math.max(1, Math.round(km / t.velCaminando * 60));
     return { km: km, minMonopatin: mono, minCaminando: cam, precio: precioPorMinutos(mono) };
+  }
+
+  /* origen y destino: objetos con lat/lng. Devuelve null si falta alguna
+     coordenada (parada "Otra" o destino "Otro"): ahí se pregunta por cuadras. */
+  function calcularViaje(origen, destino) {
+    var ok = origen && destino && !destino.otro &&
+      typeof origen.lat === 'number' && typeof destino.lat === 'number';
+    if (!ok) return null;
+    return viajePorKm(haversineKm(origen, destino) * C.TARIFA.factorGrilla);
+  }
+
+  /* Con cuadras estimadas por la persona: ya es distancia real, sin factor de grilla. */
+  function calcularViajeCuadras(cuadras) {
+    return viajePorKm(cuadras * C.TARIFA.cuadraKm);
   }
 
   /* ---------- Paradas: autocompletado por palabras clave ----------
@@ -137,18 +142,23 @@
   /* ---------- Cola de envíos ----------
      Todo lo que se manda al Apps Script pasa por acá. Los eventos se guardan en
      localStorage hasta que el servidor confirma; si no hay conexión se reintenta
-     con espera creciente, al volver la conexión y al reabrir la página. */
+     con espera creciente, al volver la conexión y al reabrir la página.
+     La cola se lee y escribe SIEMPRE desde localStorage (nunca una copia vieja en
+     memoria): así otra pestaña o una recarga no vuelve a meter eventos que el
+     servidor ya confirmó. Si igual llega un reenvío, el Apps Script lo ignora
+     por su event_id. */
   function crearCola(clave) {
-    var cola = store.get(clave, []);
     var enviando = false, espera = 2000, timer = null, oyentes = {};
 
-    function guardar() { store.set(clave, cola); }
+    function leer() { var c = store.get(clave, []); return Array.isArray(c) ? c : []; }
+    function escribir(c) { store.set(clave, c); }
 
     function agregar(ev) {
       ev.event_id = ev.event_id || uid(14);
       ev.ts = ev.ts || new Date().toISOString();
-      cola.push(ev);
-      guardar();
+      var c = leer();
+      c.push(ev);
+      escribir(c);
       return ev.event_id;
     }
 
@@ -159,16 +169,18 @@
     }
 
     function enviar(opciones) {
+      var cola = leer();
       if (enviando || !cola.length) return Promise.resolve();
       if (!C.API_URL) { // modo demo: no hay backend
-        if (window.console) console.info('[RUVU demo] envío', JSON.parse(JSON.stringify(cola)));
-        var lote0 = cola.splice(0, cola.length);
-        guardar();
-        lote0.forEach(function (ev) { avisar(ev.event_id, { ok: true, demo: true }); });
+        if (window.console) console.info('[RUVU demo] envío', cola);
+        escribir([]);
+        cola.forEach(function (ev) { avisar(ev.event_id, { ok: true, demo: true }); });
         return Promise.resolve();
       }
       enviando = true;
       var lote = cola.slice(0, 25);
+      var ids = {};
+      lote.forEach(function (ev) { ids[ev.event_id] = true; });
       return fetch(C.API_URL, {
         method: 'POST',
         // text/plain evita el "preflight" CORS que Apps Script no soporta
@@ -177,21 +189,20 @@
         keepalive: !!(opciones && opciones.keepalive)
       }).then(function (r) { return r.json(); }).then(function (res) {
         if (!res || !res.ok) throw new Error((res && res.error) || 'respuesta inválida');
-        var ids = {};
-        lote.forEach(function (ev) { ids[ev.event_id] = true; });
-        cola = cola.filter(function (ev) { return !ids[ev.event_id]; });
-        guardar();
+        // confirmado: se sacan de la cola en el acto (releyendo lo que hay guardado ahora)
+        escribir(leer().filter(function (ev) { return !ids[ev.event_id]; }));
         espera = 2000;
         var resultados = res.resultados || {};
         lote.forEach(function (ev) { avisar(ev.event_id, resultados[ev.event_id] || { ok: true }); });
         enviando = false;
-        if (cola.length) return enviar();
+        if (leer().length) return enviar();
       }).catch(function (err) {
         enviando = false;
-        lote.forEach(function (ev) { ev.intentos = (ev.intentos || 0) + 1; });
         // descartar eventos que fallan una y otra vez (por ejemplo, datos corruptos)
-        cola = cola.filter(function (ev) { return (ev.intentos || 0) < 40; });
-        guardar();
+        escribir(leer().map(function (ev) {
+          if (ids[ev.event_id]) ev.intentos = (ev.intentos || 0) + 1;
+          return ev;
+        }).filter(function (ev) { return (ev.intentos || 0) < 40; }));
         if (window.console) console.warn('[RUVU] sin conexión, reintento', err && err.message);
         programar();
       });
@@ -213,13 +224,13 @@
     document.addEventListener('visibilitychange', function () {
       if (document.visibilityState === 'hidden') enviar({ keepalive: true });
     });
-    setInterval(function () { if (cola.length && !enviando) enviar(); }, 15000);
+    setInterval(function () { if (!enviando && leer().length) enviar(); }, 15000);
 
     return {
       agregar: agregar,
       enviar: enviar,
       esperar: esperar,
-      pendientes: function () { return cola.length; }
+      pendientes: function () { return leer().length; }
     };
   }
 
@@ -290,6 +301,7 @@
     uid: uid,
     generarCodigo: generarCodigo,
     calcularViaje: calcularViaje,
+    calcularViajeCuadras: calcularViajeCuadras,
     haversineKm: haversineKm,
     buscarParadas: buscarParadas,
     normalizar: normalizar,

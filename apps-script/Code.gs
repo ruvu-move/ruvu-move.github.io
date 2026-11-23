@@ -21,7 +21,9 @@ var COLUMNAS = {
     'parada', 'parada_texto', 'destino', 'modo_actual', 'frecuencia', 'min_monopatin', 'min_caminando', 'precio_mostrado',
     'usaria', 'motivo_no', 'edad', 'acepta_precio', 'oferta_elegida', 'precio_max',
     'whatsapp', 'consentimiento', 'motivo_viaje', 'vuelta', 'cuadras', 'uso_previo', 'dia_primer_viaje', 'franja_primer_viaje', 'codigo',
-    'invito_amigo', 'ultimo_paso', 'completo', 'user_agent', 'actualizado'
+    'invito_amigo', 'ultimo_paso', 'completo', 'user_agent', 'actualizado',
+    // v2 (agregadas al final; las anteriores no se mueven ni se renombran)
+    'test', 'repetido', 'retomada', 'cuadras_estimadas', 'precio_max_v2', 'version'
   ],
   eventos: ['timestamp', 'event_id', 'session_id', 'tipo', 'punto', 'ref', 'ultimo_paso', 'datos', 'user_agent', 'recibido'],
   conteo: ['timestamp', 'tap_id', 'punto', 'accion', 'deshace_tap_id', 'dispositivo', 'recibido']
@@ -33,7 +35,8 @@ var CAMPOS_PERMITIDOS = [
   'min_monopatin', 'min_caminando', 'precio_mostrado', 'usaria', 'motivo_no', 'edad',
   'acepta_precio', 'oferta_elegida', 'precio_max', 'whatsapp', 'consentimiento',
   'motivo_viaje', 'vuelta', 'cuadras', 'uso_previo',
-  'dia_primer_viaje', 'franja_primer_viaje', 'codigo', 'invito_amigo', 'ultimo_paso', 'completo'
+  'dia_primer_viaje', 'franja_primer_viaje', 'codigo', 'invito_amigo', 'ultimo_paso', 'completo',
+  'cuadras_estimadas', 'precio_max_v2'
 ];
 var CAMPOS_FECHA = { timestamp_scan: 1, timestamp_inicio: 1, timestamp_fin: 1, timestamp: 1, recibido: 1, actualizado: 1 };
 var ALFABETO_CODIGO = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
@@ -43,7 +46,7 @@ var ALFABETO_CODIGO = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
 function doPost(e) {
   var lock = LockService.getScriptLock();
   try {
-    lock.waitLock(20000);
+    lock.waitLock(10000);
   } catch (err) {
     return json({ ok: false, error: 'ocupado' });
   }
@@ -57,6 +60,10 @@ function doPost(e) {
       conteo: hoja(ss, 'conteo'),
       ahora: new Date()
     };
+    // event_id (y tap_id del contador) que ya llegaron: un reenvío se ignora
+    ctx.vistos = idsExistentes(ctx.eventos, 'event_id');
+    var taps = idsExistentes(ctx.conteo, 'tap_id');
+    for (var tid in taps) ctx.vistos[tid] = true;
     var resultados = {};
     var filasEventos = [], filasConteo = [];
     eventos.forEach(function (ev) {
@@ -83,6 +90,16 @@ function procesar(ev, ctx, filasEventos, filasConteo) {
   var tipo = texto(ev.tipo, 20);
   var datos = (ev.datos && typeof ev.datos === 'object') ? ev.datos : {};
   var ts = fecha(ev.ts) || ctx.ahora;
+  var eid = texto(ev.event_id, 40);
+
+  // Reenvío de algo que ya se guardó: no se vuelve a escribir nada.
+  if (eid && ctx.vistos[eid]) {
+    var dup = { ok: true, duplicado: true };
+    var reg = ctx.resp.indice[texto(ev.session_id, 40)];
+    if (reg && reg.valores[ctx.resp.col.codigo]) dup.codigo = reg.valores[ctx.resp.col.codigo];
+    return dup;
+  }
+  if (eid) ctx.vistos[eid] = true;
 
   if (tipo === 'conteo') {
     if (String(ev.pin) !== String(PIN)) return { ok: false, error: 'pin' };
@@ -106,9 +123,6 @@ function procesar(ev, ctx, filasEventos, filasConteo) {
     recibido: ctx.ahora
   }));
 
-  // Un re-escaneo de alguien que ya participó queda solo en "eventos"
-  if (tipo === 'scan' && datos.repetido === 'si') return { ok: true };
-
   var t = ctx.resp;
   var cambios = {};
   var existente = t.indice[sid];
@@ -119,9 +133,20 @@ function procesar(ev, ctx, filasEventos, filasConteo) {
     cambios.ultimo_paso = 'inicio';
     cambios.completo = 'no';
   }
+  var previo = existente ? existente.valores : null;
+  if (ev.ua && (!previo || !previo[t.col.user_agent])) cambios.user_agent = texto(ev.ua, 250);
   if (tipo === 'scan') {
-    cambios.timestamp_scan = fecha(datos.timestamp_scan) || ts;
-    cambios.user_agent = texto(ev.ua, 250);
+    // Cada escaneo crea su fila. Al retomar una sesión no se pisa la hora original.
+    if (!previo || !previo[t.col.timestamp_scan]) cambios.timestamp_scan = fecha(datos.timestamp_scan) || ts;
+    if (datos.version === 'v2') {
+      cambios.version = 'v2';
+      if (datos.test === 'si') cambios.test = 'si';
+      if (datos.repetido === 'si') cambios.repetido = 'si';   // "Responder por otro trayecto"
+      if (datos.retomada === 'si') cambios.retomada = 'si';
+      if (!existente && datos.ultimo_paso) cambios.ultimo_paso = texto(datos.ultimo_paso, 30); // ya_tiene_codigo
+    } else if (datos.repetido === 'si' && !existente) {
+      cambios.ultimo_paso = 'ya_tiene_codigo'; // encuesta vieja: re-escaneo de quien ya participó
+    }
   } else if (tipo === 'invitacion') {
     cambios.invito_amigo = 'si';
   } else {
@@ -138,7 +163,10 @@ function procesar(ev, ctx, filasEventos, filasConteo) {
     if (actual && actual[t.col.completo] === 'si' && cambios.completo === 'no') delete cambios.completo;
   }
   var res = { ok: true };
-  if (cambios.codigo) {
+  var esOtroTrayecto = cambios.repetido === 'si' || (previo && previo[t.col.repetido] === 'si');
+  if (cambios.codigo && esOtroTrayecto) {
+    res.codigo = cambios.codigo; // es el mismo código que ya tenía: no se cambia
+  } else if (cambios.codigo) {
     cambios.codigo = codigoUnico(t, sid, cambios.codigo);
     res.codigo = cambios.codigo;
   }
@@ -183,10 +211,23 @@ function doGet(e) {
   return ContentService.createTextOutput(txt).setMimeType(ContentService.MimeType.JSON);
 }
 
-var DISTRIBUCIONES = ['parada', 'destino', 'modo_actual', 'frecuencia', 'usaria', 'motivo_no', 'edad',
-  'acepta_precio', 'oferta_elegida', 'precio_max', 'motivo_viaje', 'vuelta', 'cuadras', 'uso_previo',
+var DISTRIBUCIONES = ['parada', 'destino', 'cuadras_estimadas', 'modo_actual', 'frecuencia', 'usaria', 'motivo_no', 'edad',
+  'precio_max_v2', 'acepta_precio', 'oferta_elegida', 'precio_max', 'motivo_viaje', 'vuelta', 'cuadras', 'uso_previo',
   'dia_primer_viaje', 'franja_primer_viaje'];
 
+// Pantallas finales: quien quedó ahí no abandonó
+var FINALES = { fin: 1, fin_sin_whatsapp: 1, fin_menor: 1, codigo: 1, fin_bonus: 1, bonus_saltado: 1, ya_tiene_codigo: 1 };
+// Pantallas a las que se llega después (o en) la del WhatsApp
+var DESDE_WHATSAPP = { whatsapp: 1, codigo: 1, fin_bonus: 1, bonus_saltado: 1, extra_motivo: 1, extra_vuelta: 1,
+  extra_cuadras: 1, extra_uso: 1, primer_viaje: 1, fin: 1, fin_sin_whatsapp: 1 };
+
+function esCelular(ua) {
+  return /Mobile|iPhone|Android/i.test(String(ua || ''));
+}
+
+/* Agregados para el panel. Excluye sesiones de prueba (test = si) y de
+   computadora (user agent sin Mobile/iPhone/Android). Separa la encuesta
+   nueva (v2) de la anterior (v1). */
 function agregados(desde, hasta) {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
   var d0 = desde ? desde.getTime() : -Infinity;
@@ -197,15 +238,17 @@ function agregados(desde, hasta) {
     var t = f.getTime();
     return t >= d0 && t <= d1;
   }
-  var puntos = {};
-  function P(slug) {
+  var salida = {
+    ok: true, generado: new Date().toISOString(),
+    excluidas: { test: 0, computadora: 0 },
+    conteo: {},
+    versiones: { v1: { puntos: {} }, v2: { puntos: {} } }
+  };
+  function P(ver, slug) {
+    var puntos = salida.versiones[ver].puntos;
     slug = slug || 'sin-punto';
     if (!puntos[slug]) {
-      puntos[slug] = {
-        conteo: { pasan: 0, frenan: 0 },
-        qr: embudoVacio(), ref: embudoVacio(),
-        reescaneos: 0, dist: {}, abandono: {}
-      };
+      puntos[slug] = { qr: embudoVacio(), ref: embudoVacio(), reescaneos: 0, retomadas: 0, repetidas: 0, dist: {}, abandono: {} };
       DISTRIBUCIONES.forEach(function (k) { puntos[slug].dist[k] = {}; });
     }
     return puntos[slug];
@@ -216,10 +259,26 @@ function agregados(desde, hasta) {
   var c = t.col;
   t.filas.forEach(function (f) {
     if (!enRango(f[c.timestamp_scan] || f[c.timestamp_inicio])) return;
-    var p = P(f[c.punto]);
+    if (f[c.test] === 'si') { salida.excluidas.test++; return; }
+    if (!esCelular(f[c.user_agent])) { salida.excluidas.computadora++; return; }
+    var ver = f[c.version] === 'v2' ? 'v2' : 'v1';
+    var p = P(ver, f[c.punto]);
+    var paso = f[c.ultimo_paso] || 'inicio';
+    if (paso === 'ya_tiene_codigo') { p.reescaneos++; return; } // ya participó: no es una sesión nueva
+    if (f[c.retomada] === 'si') p.retomadas++;
+    if (f[c.repetido] === 'si') p.repetidas++;
     var e = f[c.ref] ? p.ref : p.qr;
     e.escanean++;
     if (f[c.timestamp_inicio]) e.empiezan++;
+    var llegaPrecio = ver === 'v2'
+      ? !!f[c.precio_max_v2] || paso === 'precio'
+      : !!f[c.acepta_precio] || paso === 'precio' || paso === 'oferta' || paso === 'precio_max';
+    if (llegaPrecio) e.llegan_precio++;
+    if (f[c.whatsapp] || f[c.codigo] || DESDE_WHATSAPP[paso]) e.llegan_whatsapp++;
+    if (f[c.whatsapp]) { e.dejan_numero++; e.whatsapp++; }
+    if (f[c.codigo]) e.ven_codigo++;
+    if (ver === 'v2' && (f[c.motivo_viaje] || f[c.dia_primer_viaje] || f[c.franja_primer_viaje])) e.responden_bonus++;
+    if (f[c.invito_amigo] === 'si') e.invitan++;
     if (f[c.usaria] === 'si') e.usaria_si++;
     if (f[c.usaria] === 'depende') e.usaria_depende++;
     if (f[c.usaria] === 'no') e.usaria_no++;
@@ -227,23 +286,23 @@ function agregados(desde, hasta) {
     if (f[c.acepta_precio] === 'si') e.acepta_precio++;
     if (f[c.acepta_precio] === 'caro' && f[c.oferta_elegida] && f[c.oferta_elegida] !== 'ninguna') e.acepta_oferta++;
     if (f[c.completo] === 'si') e.completan++;
-    if (f[c.whatsapp]) e.whatsapp++;
-    if (f[c.invito_amigo] === 'si') e.invitan++;
     DISTRIBUCIONES.forEach(function (k) {
+      if (c[k] === undefined) return;
       var v = f[c[k]];
       if (v !== '' && v !== null && v !== undefined) p.dist[k][v] = (p.dist[k][v] || 0) + 1;
     });
-    // abandono: no llegó a una pantalla final (incluye a quien dejó el WhatsApp
-    // y no terminó las preguntas extra o el día y horario)
-    var paso = f[c.ultimo_paso] || 'inicio';
     if (!FINALES[paso]) p.abandono[paso] = (p.abandono[paso] || 0) + 1;
   });
 
-  // --- re-escaneos (gente que ya había participado)
+  // --- re-escaneos de la encuesta vieja que no tienen fila (antes no se creaba)
   var ev = abrirTabla(ss, 'eventos');
+  var contados = {};
   ev.filas.forEach(function (f) {
-    if (f[ev.col.tipo] !== 'scan' || !enRango(f[ev.col.timestamp])) return;
-    if (String(f[ev.col.datos]).indexOf('"repetido":"si"') >= 0) P(f[ev.col.punto]).reescaneos++;
+    var sid = f[ev.col.session_id];
+    if (f[ev.col.tipo] !== 'scan' || t.indice[sid] || contados[sid] || !enRango(f[ev.col.timestamp])) return;
+    if (String(f[ev.col.datos]).indexOf('"repetido":"si"') < 0) return;
+    contados[sid] = true;
+    P('v1', f[ev.col.punto]).reescaneos++;
   });
 
   // --- conteo manual (cada tap_id cuenta una vez; los "deshacer" lo anulan)
@@ -256,21 +315,34 @@ function agregados(desde, hasta) {
     var a = f[co.col.accion], id = f[co.col.tap_id];
     if (a === 'deshacer' || anulados[id] || vistos[id] || !enRango(f[co.col.timestamp])) return;
     vistos[id] = true;
-    var p = P(f[co.col.punto]);
-    p.conteo.pasan++;               // quien se frena también pasó
-    if (a === 'frena') p.conteo.frenan++;
+    var slug = f[co.col.punto] || 'sin-punto';
+    var k = salida.conteo[slug] = salida.conteo[slug] || { pasan: 0, frenan: 0 };
+    k.pasan++;               // quien se frena también pasó
+    if (a === 'frena') k.frenan++;
   });
 
-  return { ok: true, generado: new Date().toISOString(), puntos: puntos };
+  return salida;
 }
-
-var FINALES = { fin: 1, fin_sin_whatsapp: 1, fin_menor: 1 };
 
 function embudoVacio() {
   return {
-    escanean: 0, empiezan: 0, usaria_si: 0, usaria_depende: 0, usaria_no: 0, menores: 0,
-    acepta_precio: 0, acepta_oferta: 0, completan: 0, whatsapp: 0, invitan: 0
+    escanean: 0, empiezan: 0, llegan_precio: 0, llegan_whatsapp: 0, dejan_numero: 0, ven_codigo: 0,
+    responden_bonus: 0, invitan: 0,
+    usaria_si: 0, usaria_depende: 0, usaria_no: 0, menores: 0, completan: 0,
+    acepta_precio: 0, acepta_oferta: 0, whatsapp: 0
   };
+}
+
+/* ids de una columna (event_id / tap_id) como objeto { id: true } */
+function idsExistentes(sh, columna) {
+  var ids = {};
+  var n = sh.getLastRow() - 1;
+  if (n < 1) return ids;
+  var enc = sh.getRange(1, 1, 1, Math.max(sh.getLastColumn(), 1)).getValues()[0];
+  var i = enc.indexOf(columna);
+  if (i < 0) return ids;
+  sh.getRange(2, i + 1, n, 1).getValues().forEach(function (f) { if (f[0]) ids[f[0]] = true; });
+  return ids;
 }
 
 /* ======================= Utilidades de hoja ======================= */
@@ -393,4 +465,59 @@ function probar() {
   ] }) } });
   Logger.log(r.getContent());
   Logger.log(doGet({ parameter: { pin: PIN } }).getContent());
+}
+
+/* ======================= Limpieza de duplicados (correr a mano UNA vez) =======================
+   1. Elegí "contarDuplicados" y tocá ▶ Ejecutar: en el registro dice cuántas filas borraría.
+   2. Hacé una copia de la planilla (Archivo → Crear una copia), por las dudas.
+   3. Elegí "limpiarDuplicados" y tocá ▶ Ejecutar. Deja la PRIMERA fila de cada event_id
+      (y de cada tap_id en "conteo") y borra las repetidas. No toca "respuestas". */
+function contarDuplicados() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var msg = ['eventos', 'conteo'].map(function (n) {
+    var r = filasDuplicadas(ss.getSheetByName(n), n === 'eventos' ? 'event_id' : 'tap_id');
+    return n + ': ' + r.length + ' filas repetidas para borrar';
+  }).join(' · ');
+  Logger.log(msg);
+  return msg;
+}
+
+function limpiarDuplicados() {
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var lock = LockService.getScriptLock();
+  lock.waitLock(30000); // que no entre ninguna respuesta mientras se borra
+  try {
+    var msg = ['eventos', 'conteo'].map(function (n) {
+      var sh = ss.getSheetByName(n);
+      var filas = filasDuplicadas(sh, n === 'eventos' ? 'event_id' : 'tap_id');
+      // de abajo hacia arriba, agrupando filas seguidas, para no correr los números
+      for (var i = filas.length - 1; i >= 0;) {
+        var fin = filas[i], ini = fin;
+        while (i > 0 && filas[i - 1] === ini - 1) { i--; ini--; }
+        sh.deleteRows(ini, fin - ini + 1);
+        i--;
+      }
+      return n + ': ' + filas.length + ' filas repetidas borradas';
+    }).join(' · ');
+    Logger.log(msg);
+    return msg;
+  } finally {
+    lock.releaseLock();
+  }
+}
+
+/* Números de fila (1 = encabezado) que repiten un id ya visto más arriba. */
+function filasDuplicadas(sh, columna) {
+  if (!sh || sh.getLastRow() < 2) return [];
+  var enc = sh.getRange(1, 1, 1, sh.getLastColumn()).getValues()[0];
+  var i = enc.indexOf(columna);
+  if (i < 0) return [];
+  var vistos = {}, filas = [];
+  sh.getRange(2, i + 1, sh.getLastRow() - 1, 1).getValues().forEach(function (f, k) {
+    var id = f[0];
+    if (!id) return;
+    if (vistos[id]) filas.push(k + 2);
+    else vistos[id] = true;
+  });
+  return filas;
 }

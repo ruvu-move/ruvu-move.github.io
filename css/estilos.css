@@ -391,3 +391,67 @@ h1:focus, h2:focus { outline: none; }
   .buho-moto, .buho-moto img, .buho-moto .rueda { animation: none; }
   .buho-moto .estela { opacity: 0; animation: none; }
 }
+
+/* ==========================================================================
+   Encuesta v2
+   ========================================================================== */
+/* Inicio: que se entienda de un vistazo que todavía no funciona y que hay regalo */
+.titulo-inicio { margin-top: 18px; font-size: 30px; }
+.todavia {
+  margin: 4px 0 0; padding: 14px 16px; border-radius: 18px;
+  background: var(--superficie); border: 2px solid var(--ruvu-verde);
+}
+.todavia p { margin: 0; }
+.todavia-no { font-family: var(--titulos); font-size: 17px; letter-spacing: -0.01em; color: var(--ruvu-blanco); }
+.todavia-no b { font-weight: 700; }
+.regalo { margin-top: 6px !important; font-size: 16px; color: #E2E6E7; }
+.regalo b { color: var(--ruvu-verde); }
+
+/* Botón secundario: mismo tamaño que el principal, con borde y sin relleno */
+.btn-secundario {
+  background: transparent;
+  color: var(--ruvu-blanco);
+  border-color: var(--ruvu-blanco);
+  font-family: var(--titulos);
+  font-weight: 700;
+  font-size: 16px;
+  letter-spacing: -0.01em;
+}
+.btn-secundario[disabled] { opacity: .45; }
+@media (max-width: 340px) { .btn-secundario { font-size: 15px; } }
+
+/* Link chico (Empezar de nuevo, Mejor dejame mi número) */
+.btn-link {
+  background: none; border: 0; padding: 10px 4px; min-height: 44px; cursor: pointer;
+  font: inherit; font-size: 15px; font-weight: 800; color: var(--ruvu-verde); text-decoration: underline;
+}
+
+/* Retomar */
+.retomar {
+  display: flex; align-items: center; justify-content: space-between; gap: 8px; flex-wrap: wrap;
+  margin: 0 0 14px; padding: 6px 6px 6px 14px; border-radius: 14px;
+  background: var(--verde-oscuro); border: 1px solid var(--ruvu-verde);
+  font-weight: 800; font-size: 15px;
+}
+
+/* ¿Dónde estás? → Otra */
+.otra-parada { margin-top: 14px; display: grid; gap: 10px; }
+#parada-otra { font-family: var(--fuente); font-weight: 700; font-size: 18px; }
+.campo input[type="text"]::placeholder { color: #5E6669; }
+
+/* WhatsApp: los dos botones visibles sin scrollear */
+.botones-wa { padding-top: 14px; }
+#caja-consent .check { margin-top: 12px; }
+
+/* Código */
+.nota-codigo { margin: 0 0 4px; font-weight: 800; font-size: 16px; }
+.final .btn-link { align-self: center; }
+.bonus-card {
+  margin-top: 18px; padding: 14px 16px; border-radius: 18px; text-align: left;
+  background: var(--superficie); border: 1px solid var(--grafito);
+  display: grid; gap: 10px;
+}
+.bonus-card p { margin: 0; }
+
+/* Bonus: motivo en dos columnas */
+.chips.dos { grid-template-columns: repeat(2, 1fr); }

@@ -7,7 +7,7 @@
   <meta name="robots" content="noindex">
   <title>RUVU · Panel</title>
   <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;600;800&family=Unbounded:wght@500;700;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="css/estilos.css">
+  <link rel="stylesheet" href="css/estilos.css?v=2">
   <style>
     .panel { max-width: 1100px; margin: 0 auto; padding: 16px 16px 48px; }
     .cab { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin-bottom: 12px; }
@@ -65,15 +65,17 @@
     <div class="filtros">
       <label>Desde<input type="date" id="desde"></label>
       <label>Hasta<input type="date" id="hasta"></label>
-      <label>Ver punto<select id="sel-punto"></select></label>
+      <label>Encuesta<select id="sel-version"><option value="v2">Nueva (v2)</option><option value="v1">Anterior (v1)</option></select></label>
+      <label>Ver punto<select id="sel-punto"><option value="total">Total</option></select></label>
       <button class="btn btn-verde" id="actualizar" type="button">Actualizar</button>
       <button class="btn btn-texto" id="csv" type="button">Exportar CSV</button>
     </div>
     <div id="aviso"></div>
+    <p class="chica" id="excluidas" style="margin:-8px 0 14px"></p>
 
     <section class="tarjeta">
       <h2>Embudo por punto</h2>
-      <p class="nota">Solo gente que llegó por el QR del punto. Debajo de cada número, el % respecto del paso anterior, salvo: <b>Acepta el precio</b> sobre los que dijeron "sí" o "depende" (los únicos que ven el precio) y <b>Dejan WhatsApp</b> sobre los que empezaron (se le pide a todos). "Pasan" incluye a los que se frenan.</p>
+      <p class="nota">Solo gente que llegó por el QR (los que entran por el link de un amigo van en "Referidos"). Debajo de cada número, el % respecto del paso anterior, salvo: <b>Llegan a WhatsApp</b> sobre los que empezaron (quien dice "No" saltea el precio), <b>Dejan número</b> y <b>Ven el código</b> sobre los que llegan a WhatsApp (el código se da con o sin número), e <b>Invitan</b> sobre los que ven el código.</p>
       <div class="tabla-wrap"><table id="tabla-embudo"></table></div>
     </section>
 
@@ -82,6 +84,11 @@
         <h2 id="titulo-embudo">Embudo</h2>
         <p class="nota">% respecto del paso anterior (ver nota de la tabla)</p>
         <div class="barras" id="embudo"></div>
+      </section>
+      <section class="tarjeta">
+        <h2>Sesiones que volvieron</h2>
+        <p class="nota">Retomaron donde dejaron, respondieron otro trayecto o ya tenían código</p>
+        <div class="barras" id="sesiones"></div>
       </section>
       <section class="tarjeta">
         <h2>Abandono por paso</h2>
@@ -100,8 +107,8 @@
   </main>
   <div id="tip" hidden></div>
 
-  <script src="config.js"></script>
-  <script src="js/comun.js"></script>
-  <script src="js/panel.js"></script>
+  <script src="config.js?v=2"></script>
+  <script src="js/comun.js?v=2"></script>
+  <script src="js/panel.js?v=2"></script>
 </body>
 </html>

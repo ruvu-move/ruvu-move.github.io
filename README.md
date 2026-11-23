@@ -132,17 +132,47 @@ Cómo se calcula el viaje:
 
 ---
 
-## Pregunta "¿Dónde estás?"
+## Encuesta v2 (flujo actual)
 
-Primera pregunta después de *Empezar*: **un solo campo para escribir**, obligatorio (sin lista de opciones).
-- Si lo que escriben coincide con una palabra clave de `PARADAS` (`config.js`), al terminar de escribir el campo se completa solo con el nombre: `moreno`, `MORENO`, `P Moreno` → **Plaza Moreno**; `italia` → **Plaza Italia**; `tren` → **Estación de tren**; `8` → **Calle 8**. No importan mayúsculas, tildes ni "plaza", "pza", "facultad de"…
-- Si viene del QR de un punto, el campo ya aparece completo (se puede cambiar).
-- Se guarda `parada` (id reconocido, u `otra` si no coincidió) y `parada_texto` (lo que escribió). Si la parada tiene coordenadas, desde ahí se calculan minutos y precio.
-- Para sumar lugares o palabras clave, editá `PARADAS` (coordenadas aproximadas: TODO).
+Una pregunta por pantalla, obligatorias y de una sola opción. La barra de progreso cuenta solo las 6 preguntas obligatorias (de "¿A dónde vas?" a "Edad").
 
-**Preguntas extra** (después del WhatsApp o de "Prefiero no dejarlo", antes del final): ¿Para qué es este viaje? (`motivo_viaje`), ¿Lo usarías también para volver? (`vuelta`), ¿Cuántas cuadras caminarías para buscar un monopatín? (`cuadras`) y ¿Alguna vez usaste un monopatín eléctrico? (`uso_previo`). Si alguien abandona ahí, el panel lo muestra en "Abandono por paso".
+0. **Inicio:** "RUVU llega a La Plata", aclara que **todavía no estamos andando** y que respondiendo te regalamos el primer viaje → *Quiero mi viaje gratis*.
+1. **¿Dónde estás?** Botones con los lugares de `DONDE_ESTAS` (`config.js`) + "Otra", que abre un campo de texto opcional.
+2. **¿A dónde vas?**
+   - 2b. **¿Más o menos cuántas cuadras son?** (10 / 20 / 30 / 40 o más). Solo si la parada es "Otra" o el destino es "Otro". 1 cuadra = `TARIFA.cuadraKm` (0,13 km), sin factor de grilla. Se guarda en `cuadras_estimadas`.
+3. **¿Cómo ibas a ir?** 4. **¿Cuántas veces por semana?**
+5. **¿Lo usarías?** ("No" → motivo y saltea el precio).
+6. **¿Cuánto pagarías como máximo?** (`PRECIOS_MAX_V2`) → `precio_max_v2` (`600`, `900`, `1200`, `1500+`, `no`). Se sigue guardando `precio_mostrado`.
+7. **Edad** (menos de 18 corta, sin código).
+8. **WhatsApp:** *Activar mi viaje* o *Seguir sin dejar mi número* (mismo tamaño). El consentimiento aparece y es obligatorio solo si escribe un número.
+9. **Código** para todos los mayores de 18 (`completo = si`). Sin número: "Sacale captura" y *Mejor dejame mi número*.
+10. **Bonus opcional:** para qué + día y horario (*Listo* / *Saltar*).
 
-Todas las preguntas son obligatorias y de una sola opción (el primer toque bloquea las demás). Lo único que se puede no dejar es el WhatsApp ("Prefiero no dejarlo"): el consentimiento para datos personales tiene que ser libre (Ley 25.326).
+**Si vuelve a escanear:**
+- No terminó → retoma donde quedó, con el mismo `session_id` ("Seguí donde dejaste" · *Empezar de nuevo*). Columna `retomada = si`.
+- Ya terminó → ve su código y puede tocar *Responder por otro trayecto*: sesión nueva con `repetido = si` y **el mismo código**. Si la primera vez no dejó número, puede dejarlo ahora.
+
+**Modo prueba:** abrí la encuesta con `?test=1` (por ejemplo `https://ruvu-move.github.io/?test=1`). Esas sesiones quedan con `test = si` y el panel no las cuenta. El panel tampoco cuenta sesiones abiertas desde una computadora.
+
+### Columnas nuevas de `respuestas` (al final, en este orden)
+
+`test` · `repetido` · `retomada` · `cuadras_estimadas` · `precio_max_v2` · `version`
+
+Ninguna columna existente se mueve ni se renombra. `acepta_precio`, `oferta_elegida`, `precio_max`, `vuelta`, `cuadras` y `uso_previo` quedan vacías en las sesiones nuevas.
+
+### Publicar una nueva versión del Apps Script (sin cambiar la URL)
+
+1. En la planilla: *Extensiones → Apps Script* → reemplazá todo `Código.gs` por `apps-script/Code.gs` → Guardar.
+2. **Implementar → Administrar implementaciones → ✏️ (Editar) → Versión: Nueva versión → Implementar.**
+3. **Nunca** "Nueva implementación": genera otra URL `/exec` y la encuesta deja de guardar.
+4. Probá `<URL>/exec?accion=ping` → `{"ok":true,"ping":"pong"}`.
+
+### Duplicados viejos en `eventos`
+
+El Apps Script nuevo ignora cualquier `event_id` que ya exista, así que no se generan más. Para borrar los viejos (una sola vez):
+1. Hacé una copia de la planilla (*Archivo → Crear una copia*).
+2. En Apps Script elegí `contarDuplicados` → ▶ Ejecutar → mirá el registro (dice cuántas filas borraría).
+3. Elegí `limpiarDuplicados` → ▶ Ejecutar. Deja la primera fila de cada `event_id` y borra las repetidas. No toca `respuestas`.
 
 ## 4. QR y carteles
 
@@ -178,12 +208,12 @@ El PDF listo para imprimir (1 cartel A5 con el QR único) está en `qr/carteles-
 
 ```bash
 npm install
-npm run dev        # http://localhost:8080/?p=plaza-san-martin   (simula el Apps Script en memoria)
-npm test           # simula 20 sesiones de punta a punta y verifica hoja + panel
-npm run capturas   # regenera /capturas (360 px y 320 px) y el PDF de carteles
+npm run dev        # http://localhost:8080/   (simula el Apps Script en memoria)
+npm test           # simula sesiones de punta a punta y verifica hoja + panel
+npm run capturas   # regenera /capturas (360 px y 320 px)
 ```
 
-`npm test` recorre con un navegador real los caminos: sí, depende, es caro (pack / abono / valle / ninguna + precio máximo), no lo pagaría, "No" (sin mostrar precio), menores de 18, abandonos a mitad, solo escaneo, sin `?p=`, referido, re-escaneo ("Ya participaste") y corte de conexión a mitad de la encuesta. Después verifica fila por fila la hoja `respuestas`, los conteos del `doGet`, el contador (incluido "deshacer"), la fila Total del panel, el CSV y el filtro de fechas.
+`npm test` recorre con un navegador real (vista de celular): completa con número, sin número (+ "Mejor dejame mi número"), parada "Otra" + destino "Otro" con cuadras (y verifica minutos y precio), "No" que saltea el precio, menor de 18, abandono y retomar con el mismo `session_id`, "Empezar de nuevo", ya completó + otro trayecto sin código nuevo, participante de la encuesta vieja, corte de conexión y **respuestas perdidas** (el servidor guarda pero el celular no se entera: lo que generaba los duplicados) sin un solo `event_id` repetido, modo prueba, computadora, y los totales del doGet y del panel.
 
 ---
 

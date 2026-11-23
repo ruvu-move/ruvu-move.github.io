@@ -11,6 +11,7 @@ function crearHoja(nombre) {
     getLastRow: () => celdas.length,
     getLastColumn: () => celdas.reduce((m, f) => Math.max(m, f.length), 0),
     setFrozenRows() {},
+    deleteRows(desde, cuantas) { celdas.splice(desde - 1, cuantas); },
     getDataRange() {
       const nr = Math.max(sh.getLastRow(), 1), nc = Math.max(sh.getLastColumn(), 1);
       return sh.getRange(1, 1, nr, nc);

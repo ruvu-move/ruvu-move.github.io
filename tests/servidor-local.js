@@ -3,7 +3,10 @@
    - Simula el Apps Script en /api corriendo apps-script/Code.gs sobre una
      "planilla" en memoria (tests/gas-mock.js).
    Uso: npm run dev  →  http://localhost:8080/?p=plaza-san-martin
-   Extras para pruebas: /__datos (ver la planilla), /__offline?on=1|0 (cortar /api). */
+   Extras para pruebas: /__datos (ver la planilla), /__offline?on=1|0 (cortar /api),
+   /__perder?on=1|0 (el servidor GUARDA lo que llega pero el celular no recibe la
+   respuesta: es lo que provocaba los reenvíos duplicados en vivo),
+   /__correr?f=<función> (ejecuta una función de Code.gs, p. ej. contarDuplicados). */
 const http = require('http');
 const fs = require('fs');
 const path = require('path');
@@ -18,6 +21,7 @@ const TIPOS = {
 function iniciar(puerto = 8080) {
   let gas = crearEntorno();
   let offline = false;
+  let perder = false;
 
   const server = http.createServer((req, res) => {
     const url = new URL(req.url, 'http://x');
@@ -30,6 +34,7 @@ function iniciar(puerto = 8080) {
         req.on('data', c => (body += c));
         req.on('end', () => {
           const out = gas.ctx.doPost({ postData: { contents: body } });
+          if (perder) { req.socket.destroy(); return; }
           res.writeHead(200, { ...cors, 'Content-Type': 'application/json' });
           res.end(out.getContent());
         });
@@ -47,6 +52,12 @@ function iniciar(puerto = 8080) {
       return;
     }
     if (url.pathname === '/__offline') { offline = url.searchParams.get('on') === '1'; res.end('ok'); return; }
+    if (url.pathname === '/__perder') { perder = url.searchParams.get('on') === '1'; res.end('ok'); return; }
+    if (url.pathname === '/__correr') {
+      const r = gas.ctx[url.searchParams.get('f')]();
+      res.end(String(r));
+      return;
+    }
     if (url.pathname === '/__reset') { gas = crearEntorno(); res.end('ok'); return; }
 
     let archivo = path.join(RAIZ, decodeURIComponent(url.pathname));

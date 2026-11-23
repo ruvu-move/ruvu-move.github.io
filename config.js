@@ -57,7 +57,16 @@ window.RUVU_CONFIG = {
   ],
 
   /* ------------------------------------------------------------------------
-     PARADAS para "¿En qué parada estás?" (texto libre con autocompletado).
+     "¿DÓNDE ESTÁS?" (paso 1): los botones que ve la persona, en este orden.
+     Son ids de PARADAS (de ahí salen nombre y coordenadas). Al final siempre
+     aparece "Otra", que abre un campo de texto opcional. Si elige "Otra", no
+     hay coordenadas y se pregunta cuántas cuadras son.
+     ------------------------------------------------------------------------ */
+  DONDE_ESTAS: ['plaza-moreno', 'plaza-san-martin', 'plaza-italia', 'bosque', 'terminal', 'estacion', 'calle-8'],
+
+  /* ------------------------------------------------------------------------
+     PARADAS: lugares conocidos con coordenadas. Los usa "¿Dónde estás?" y el
+     panel (para mostrar nombres de respuestas viejas, cuando era texto libre).
      - claves: palabras que, si la persona las escribe, sugieren esa parada.
        No importan mayúsculas ni tildes: "moreno", "MORENO", "P Moreno" y
        "pza moreno" dan Plaza Moreno. Agregá todas las variantes que quieras.
@@ -122,11 +131,21 @@ window.RUVU_CONFIG = {
     porMinuto: 80,       // $ por minuto
     seguro: 200,         // $ por viaje
     redondeo: 50,        // redondear hacia arriba a múltiplos de $50
-    otro: { monopatin: 10, caminando: 25 } // minutos usados si eligen "Otro"
+    cuadraKm: 0.13       // 1 cuadra = 0,13 km. Se usa cuando no hay coordenadas (parada "Otra" o destino "Otro")
   },
 
+  /* "¿Más o menos cuántas cuadras son?" (aparece solo si la parada es "Otra" o el
+     destino es "Otro"). La última opción se muestra como "40 o más" y cuenta como 40.
+     Con las cuadras NO se aplica factorGrilla: ya son distancia real. */
+  CUADRAS_OPCIONES: [10, 20, 30, 40],
+
+  /* "¿Cuánto pagarías como máximo por este viaje?" (encuesta v2).
+     La última opción se muestra como "$1.500 o más". Se guarda en precio_max_v2. */
+  PRECIOS_MAX_V2: [600, 900, 1200, 1500],
+
   /* ------------------------------------------------------------------------
-     OFERTAS que se muestran si dicen "Es caro".
+     OFERTAS de la encuesta vieja (v1). Ya no se muestran: quedan para que el
+     panel pueda leer las respuestas anteriores.
      descuentoValle: 0.30 = 30% menos (el precio con descuento se calcula solo).
      ------------------------------------------------------------------------ */
   OFERTAS: {

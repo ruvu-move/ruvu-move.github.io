@@ -1,297 +1,415 @@
-/* Simula 20 sesiones de punta a punta en un navegador real (Chromium, vista
-   mobile) contra el Apps Script simulado, y verifica que la hoja "respuestas",
-   los agregados del doGet y el panel cuenten bien.
+/* Simula sesiones de punta a punta de la encuesta v2 en un navegador real
+   (Chromium, vista mobile) contra el Apps Script simulado, y verifica la hoja
+   "respuestas", "eventos", los agregados del doGet y el panel.
    Uso: npm test */
 const { chromium } = require('playwright');
 const { iniciar } = require('./servidor-local');
 
 const PUERTO = 8099;
 const BASE = `http://localhost:${PUERTO}`;
-const WA = n => `221 555 ${String(1000 + n)}`;
-
-/* Cada sesión: punto, ref opcional, acciones y lo que debería quedar en la hoja.
-   Acciones: 'empezar' · 'escribir:<texto>' · 'parada' (Siguiente) · valor de opción · 'wa' · 'nowa' · 'pv' (día+franja) · 'pv' · 'invitar' · 'offline'/'online' */
-const SESIONES = [
-  { id: 1, p: 'plaza-san-martin', acc: ['empezar', 'parada', 'terminal', 'caminando', 'todos_los_dias', 'si', '25-34', 'si', 'wa', 'extras', 'pv', 'invitar'],
-    espera: { parada: 'plaza-san-martin', parada_texto: 'Plaza San Martín', motivo_viaje: 'facu', vuelta: 'si', cuadras: '2-3', uso_previo: 'nunca', usaria: 'si', acepta_precio: 'si', completo: 'si', ultimo_paso: 'fin', wa: true, invito_amigo: 'si', dia_primer_viaje: 'lun', franja_primer_viaje: '7-10' } },
-  { id: 2, p: 'plaza-san-martin', acc: ['empezar', 'escribir:la casa de mi tía', 'parada', 'plaza-moreno', 'micro', '2-3', 'si', '18-24', 'si', 'wa', 'extras', 'pv'],
-    espera: { parada: 'otra', parada_texto: 'la casa de mi tía', usaria: 'si', acepta_precio: 'si', completo: 'si', ultimo_paso: 'fin', wa: true } },
-  { id: 3, p: 'bosque', acc: ['empezar', 'parada', 'terminal', 'doble:caminando|micro', '4_o_mas', 'depende', '18-24', 'caro', 'pack', 'wa', 'extras', 'pv'],
-    espera: { usaria: 'depende', acepta_precio: 'caro', oferta_elegida: 'pack', completo: 'si', wa: true, modo_actual: 'caminando' } },
-  { id: 4, p: 'bosque', acc: ['empezar', 'parada', 'plaza-moreno', 'caminando', '2-3', 'depende', '25-34', 'caro', 'valle', 'wa', 'extras', 'pv', 'invitar'],
-    espera: { usaria: 'depende', acepta_precio: 'caro', oferta_elegida: 'valle', completo: 'si', wa: true, invito_amigo: 'si' } },
-  { id: 5, p: 'terminal', acc: ['empezar', 'parada', 'plaza-moreno', 'micro', '1_o_menos', 'si', '35-44', 'caro', 'abono', 'nowa', 'extras'],
-    espera: { usaria: 'si', acepta_precio: 'caro', oferta_elegida: 'abono', completo: 'si', ultimo_paso: 'fin_sin_whatsapp', wa: false } },
-  { id: 6, p: 'terminal', acc: ['empezar', 'parada', 'rectorado', 'caminando', 'todos_los_dias', 'depende', '18-24', 'caro', 'ninguna', '900', 'wa', 'extras', 'pv'],
-    espera: { usaria: 'depende', acepta_precio: 'caro', oferta_elegida: 'ninguna', precio_max: '900', completo: 'si', wa: true } },
-  { id: 7, p: 'estacion', acc: ['empezar', 'parada', 'plaza-moreno', 'bici', '2-3', 'depende', '45+', 'caro', 'ninguna', 'menos_600', 'nowa', 'extras'],
-    espera: { usaria: 'depende', acepta_precio: 'caro', oferta_elegida: 'ninguna', precio_max: 'menos_600', completo: 'si', wa: false } },
-  { id: 8, p: 'estacion', acc: ['empezar', 'parada', 'terminal', 'caminando', '2-3', 'no', 'inseguro', '25-34', 'wa', 'extras', 'pv'],
-    espera: { usaria: 'no', motivo_no: 'inseguro', acepta_precio: '', completo: 'si', wa: true }, sinPrecio: true },
-  { id: 9, p: 'plaza-italia', acc: ['empezar', 'parada', 'plaza-moreno', 'caminando', '1_o_menos', 'no', 'prefiero_caminar', '45+', 'nowa', 'extras'],
-    espera: { usaria: 'no', motivo_no: 'prefiero_caminar', completo: 'si', ultimo_paso: 'fin_sin_whatsapp', wa: false }, sinPrecio: true },
-  { id: 10, p: 'plaza-italia', acc: ['empezar', 'parada', 'terminal', 'caminando', '2-3', 'si', 'menos_18'],
-    espera: { usaria: 'si', edad: 'menos_18', completo: 'si', ultimo_paso: 'fin_menor', wa: false, codigo: '' }, menor: true },
-  { id: 11, p: 'facultad', acc: ['empezar', 'escribir:odonto', 'parada', 'plaza-moreno', 'micro', '4_o_mas', 'no', 'clima', 'menos_18'],
-    espera: { usaria: 'no', motivo_no: 'clima', edad: 'menos_18', completo: 'si', ultimo_paso: 'fin_menor', wa: false, parada: 'fac-odontologia', parada_texto: 'odonto' }, menor: true },
-  { id: 12, p: 'facultad', acc: ['empezar', 'siguiente-sin-escribir'], espera: { completo: 'no', ultimo_paso: 'parada', wa: false, parada: '' } },
-  { id: 13, p: 'control-calle-8', acc: ['empezar', 'parada', 'terminal', 'caminando', '2-3'], espera: { completo: 'no', ultimo_paso: 'usaria', wa: false } },
-  { id: 14, p: 'control-calle-8', acc: ['empezar', 'parada', 'terminal', 'auto', '2-3', 'si', '25-34'], espera: { completo: 'no', ultimo_paso: 'precio', usaria: 'si', wa: false } },
-  { id: 15, p: 'plaza-san-martin', acc: ['empezar', 'parada', 'estacion', 'caminando', '2-3', 'si', '18-24', 'no_pagaria'],
-    espera: { completo: 'no', ultimo_paso: 'whatsapp', acepta_precio: 'no_pagaria', wa: false } },
-  { id: 16, p: 'bosque', acc: [], espera: { completo: 'no', ultimo_paso: 'inicio', wa: false, timestamp_inicio: '' } },
-  { id: 17, p: null, acc: ['empezar', 'escribir:P MORENO', 'parada', 'otro', 'caminando', '2-3', 'si', '18-24', 'si', 'wa', 'extras', 'pv'],
-    espera: { punto: 'sin-punto', parada: 'plaza-moreno', parada_texto: 'P MORENO', usaria: 'si', acepta_precio: 'si', completo: 'si', wa: true, min_monopatin: 10, min_caminando: 25, precio_mostrado: 1250 } },
-  { id: 18, p: 'plaza-san-martin', refDe: 1, acc: ['empezar', 'parada', 'plaza-moreno', 'caminando', '2-3', 'si', '18-24', 'si', 'wa', 'extras', 'pv'],
-    espera: { usaria: 'si', acepta_precio: 'si', completo: 'si', wa: true } },
-  { id: 19, p: 'terminal', acc: ['empezar', 'parada', 'plaza-moreno', 'uber_remis', '2-3', 'depende', '35-44', 'no_pagaria', 'wa', 'extra-parcial'],
-    espera: { usaria: 'depende', acepta_precio: 'no_pagaria', completo: 'si', wa: true, motivo_viaje: 'laburo', ultimo_paso: 'extra_vuelta' } },
-  { id: 20, p: 'estacion', acc: ['empezar', 'parada', 'plaza-moreno', 'offline', 'caminando', '2-3', 'si', 'online', '25-34', 'si', 'wa', 'extras', 'pv'],
-    espera: { usaria: 'si', acepta_precio: 'si', completo: 'si', wa: true, modo_actual: 'caminando' } }
-];
+const UA_MOVIL = 'Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0 Mobile Safari/537.36';
+const UA_PC = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0 Safari/537.36';
 
 let fallas = 0;
 function check(cond, msg) {
   if (cond) console.log('  ✓ ' + msg);
   else { fallas++; console.log('  ✗ ' + msg); }
 }
+const get = async ruta => (await fetch(BASE + ruta)).json();
+const datosHoja = () => get('/__datos');
+const fila = async sid => (await datosHoja()).respuestas.find(f => f.session_id === sid);
 
-async function correrSesion(browser, s, codigos) {
-  const ctx = await browser.newContext({ viewport: { width: 360, height: 740 }, isMobile: true, hasTouch: true });
+async function nuevoCtx(browser, ua) {
+  const ctx = await browser.newContext({ viewport: { width: 360, height: 740 }, isMobile: true, hasTouch: true, userAgent: ua || UA_MOVIL });
   await ctx.route(/wa\.me|fonts\.(googleapis|gstatic)/, r => r.abort());
-  const page = await ctx.newPage();
-  const errores = [];
-  page.on('pageerror', e => errores.push(e.message));
-  let url = BASE + '/' + (s.p ? '?p=' + s.p : '');
-  if (s.refDe) url += '&ref=' + codigos[s.refDe];
-  await page.goto(url);
-  const pantalla = () => page.getAttribute('#pantalla', 'data-pantalla');
-  const visitadas = [await pantalla()];
-  const esperarCambio = async antes => {
-    await page.waitForFunction(a => document.getElementById('pantalla').getAttribute('data-pantalla') !== a, antes, { timeout: 8000 });
-    visitadas.push(await pantalla());
-  };
-  for (const a of s.acc) {
-    const antes = await pantalla();
-    if (a === 'offline') { await fetch(BASE + '/__offline?on=1'); continue; }
-    if (a === 'online') { await fetch(BASE + '/__offline?on=0'); continue; }
-    if (a === 'empezar') { await page.click('#empezar'); await esperarCambio(antes); continue; }
-    if (a.startsWith('escribir:')) {
-      await page.fill('#parada', '');
-      await page.type('#parada', a.slice(9));
-      continue;
-    }
-    if (a === 'siguiente-sin-escribir') {
-      check(await page.inputValue('#parada') === '' && await page.isDisabled('#siguiente-parada'), `S${s.id}: no puede seguir sin escribir dónde está`);
-      continue;
-    }
-    if (a.startsWith('doble:')) {
-      // dos toques casi simultáneos en opciones distintas: solo cuenta el primero
-      const [v1, v2] = a.slice(6).split('|');
-      await page.evaluate(([x, y]) => {
-        document.querySelector(`#pantalla [data-v="${x}"]`).click();
-        document.querySelector(`#pantalla [data-v="${y}"]`).click();
-      }, [v1, v2]);
-      await esperarCambio(antes);
-      await page.waitForTimeout(400);
-      check(await pantalla() === 'frecuencia', `S${s.id}: doble toque → avanza una sola pantalla`);
-      continue;
-    }
-    if (a === 'parada') {
-      if (s.id === 17) {
-        await page.locator('#parada').blur();
-        check(await page.inputValue('#parada') === 'Plaza Moreno', `S17: "P MORENO" se autocompleta con Plaza Moreno`);
-        check(!(await page.$('.sugerencia')), 'S17: es un solo campo, sin lista de opciones');
-      }
-      if (s.id === 1) check(await page.inputValue('#parada') === 'Plaza San Martín', 'S1: la parada viene completa desde el QR');
-      await page.click('#siguiente-parada'); await esperarCambio(antes); continue;
-    }
-    if (a === 'wa') {
-      await page.fill('#wa', WA(s.id));
-      await page.check('#consent');
-      await page.click('#enviar-wa');
-      await esperarCambio(antes);
-      continue;
-    }
-    if (a === 'extras' || a === 'extra-parcial') {
-      check(await pantalla() === 'extra_motivo', `S${s.id}: después del WhatsApp vienen las preguntas extra`);
-      const resp = a === 'extras' ? ['facu', 'si', '2-3', 'nunca'] : ['laburo'];
-      for (const v of resp) {
-        const antesX = await pantalla();
-        await page.click(`#pantalla [data-v="${v}"]`);
-        await esperarCambio(antesX);
-      }
-      continue;
-    }
-    if (a === 'nowa') { await page.click('#no-wa'); await esperarCambio(antes); continue; }
-    if (a === 'pv') {
-      check(await page.isDisabled('#listo-pv') && !(await page.$('#saltar-pv')), `S${s.id}: día y horario obligatorios (sin "Saltar")`);
-      await page.click('.chips[data-grupo="dia"] [data-v="lun"]');
-      await page.click('.chips[data-grupo="franja"] [data-v="7-10"]');
-      await page.click('#listo-pv'); await esperarCambio(antes); continue;
-    }
-    if (a === 'invitar') {
-      codigos[s.id] = (await page.textContent('#codigo')).trim();
-      const href = await page.getAttribute('#invitar', 'href');
-      check(decodeURIComponent(href).includes('&ref=' + codigos[s.id]), `S${s.id}: link de invitación lleva ?p=${s.p}&ref=${codigos[s.id]}`);
-      await page.click('#invitar');
-      await page.waitForTimeout(300);
-      continue;
-    }
-    await page.click(`#pantalla [data-v="${a}"]`);
-    await esperarCambio(antes);
-  }
-  if (await pantalla() === 'fin') {
-    codigos[s.id] = (await page.textContent('#codigo')).trim();
-  }
-  // esperar a que la cola se vacíe
-  await page.waitForFunction(() => window.__ruvu.cola.pendientes() === 0, null, { timeout: 30000 });
-  check(!errores.length, `S${s.id}: sin errores de JavaScript ${errores.join(' | ')}`);
-  return { ctx, page, visitadas, sesion: await page.evaluate(() => window.__ruvu.sesion) };
+  return ctx;
 }
 
-/* Agregados esperados, calculados a partir de lo que debería haber en la hoja */
-function esperados(filas) {
-  const out = {};
-  for (const f of filas) {
-    const p = (out[f.punto] = out[f.punto] || { qr: {}, ref: {} });
-    const e = f.ref ? p.ref : p.qr;
-    const inc = k => (e[k] = (e[k] || 0) + 1);
-    inc('escanean');
-    if (f.timestamp_inicio) inc('empiezan');
-    if (f.usaria === 'si') inc('usaria_si');
-    if (f.usaria === 'depende') inc('usaria_depende');
-    if (f.acepta_precio === 'si') inc('acepta_precio');
-    if (f.whatsapp) inc('whatsapp');
-    if (f.invito_amigo === 'si') inc('invitan');
-    if (f.completo === 'si') inc('completan');
+const pantalla = page => page.getAttribute('#pantalla', 'data-pantalla');
+async function esperarCambio(page, antes) {
+  await page.waitForFunction(a => document.getElementById('pantalla').getAttribute('data-pantalla') !== a, antes, { timeout: 10000 });
+}
+const sesion = page => page.evaluate(() => window.__ruvu.sesion);
+const vaciarCola = page => page.waitForFunction(() => window.__ruvu.cola.pendientes() === 0, null, { timeout: 40000 });
+
+/* Acciones: 'empezar' · 'donde:<id>' · 'otra[:texto]' · '<valor de opción>' · 'wa:<número>' · 'sinwa' · 'bonus' · 'saltar-bonus' */
+async function recorrer(page, acciones) {
+  for (const a of acciones) {
+    const antes = await pantalla(page);
+    if (a === 'empezar') await page.click('#empezar');
+    else if (a.startsWith('donde:')) await page.click(`#pantalla [data-v="${a.slice(6)}"]`);
+    else if (a.startsWith('otra')) {
+      await page.click('#pantalla [data-v="otra"]');
+      const t = a.split(':')[1];
+      if (t) await page.fill('#parada-otra', t);
+      await page.click('#siguiente-otra');
+    } else if (a.startsWith('wa:')) {
+      await page.fill('#wa', a.slice(3));
+      await page.check('#consent');
+      await page.click('#enviar-wa');
+    } else if (a === 'sinwa') await page.click('#no-wa');
+    else if (a === 'dejar-numero') await page.click('#dejar-numero');
+    else if (a === 'bonus') {
+      await page.click('#ir-bonus'); await esperarCambio(page, antes);
+      await page.click('[data-grupo="motivo_viaje"] [data-v="facu"]');
+      await page.click('[data-grupo="dia_primer_viaje"] [data-v="lun"]');
+      await page.click('[data-grupo="franja_primer_viaje"] [data-v="7-10"]');
+      const b = await pantalla(page);
+      await page.click('#listo-bonus');
+      await esperarCambio(page, b);
+      continue;
+    } else if (a === 'saltar-bonus') {
+      await page.click('#ir-bonus'); await esperarCambio(page, antes);
+      const b = await pantalla(page);
+      await page.click('#saltar-bonus');
+      await esperarCambio(page, b);
+      continue;
+    } else await page.click(`#pantalla [data-v="${a}"]`);
+    await esperarCambio(page, antes);
   }
-  return out;
 }
 
 (async () => {
   const server = await iniciar(PUERTO);
   await fetch(BASE + '/__reset');
   const browser = await chromium.launch();
-  const codigos = {};
-  const resultados = {};
+  const errores = [];
+  const sesiones = {}; // nombre → session_id
 
-  console.log('\n== 20 sesiones ==');
-  for (const s of SESIONES) {
-    console.log(`\nSesión ${s.id} (${s.p || 'sin ?p='}${s.refDe ? ', referida' : ''}): ${s.acc.join(' → ') || '(solo escanea)'}`);
-    const r = await correrSesion(browser, s, codigos);
-    resultados[s.id] = r;
-    if (s.sinPrecio) check(!r.visitadas.includes('precio'), `S${s.id}: no se mostró el precio`);
-    if (s.menor) check(r.visitadas.at(-1) === 'fin_menor' && !r.visitadas.includes('whatsapp'), `S${s.id}: menor termina sin pedir WhatsApp`);
-    if (s.id === 1) {
-      check(/^RUVU-[A-HJ-NP-Z2-9]{4}$/.test(codigos[1]), `S1: código con formato válido (${codigos[1]})`);
-      // Re-escaneo desde el mismo celular
-      await r.page.goto(BASE + '/?p=plaza-san-martin');
-      await r.page.waitForSelector('#codigo');
-      check((await r.page.textContent('#codigo')).trim() === codigos[1], 'S1 re-escanea: "Ya participaste" con su mismo código');
-      await r.page.waitForFunction(() => window.__ruvu.cola.pendientes() === 0);
-    }
-    if (s.id !== 1) await r.ctx.close();
+  async function abrir(ctx, query) {
+    const page = await ctx.newPage();
+    page.on('pageerror', e => errores.push(e.message));
+    await page.goto(BASE + '/' + (query || ''));
+    await page.waitForSelector('#pantalla[data-pantalla]');
+    return page;
   }
 
-  console.log('\n== Contador ==');
-  const ctxC = await browser.newContext({ viewport: { width: 360, height: 740 }, isMobile: true, hasTouch: true });
-  const pc = await ctxC.newPage();
-  await pc.goto(BASE + '/contador.html');
-  await pc.fill('#pin input', '1111'); await pc.click('#pin button');
-  check(await pc.isVisible('.pin-error'), 'PIN incorrecto rechazado');
-  await pc.fill('#pin input', '2026'); await pc.click('#pin button');
-  await pc.selectOption('#punto', 'plaza-san-martin');
-  for (let i = 0; i < 10; i++) await pc.click('#pasa');
-  for (let i = 0; i < 3; i++) await pc.click('#frena');
-  await pc.click('#deshacer'); // deshace el último "frena"
-  await pc.selectOption('#punto', 'bosque');
-  for (let i = 0; i < 5; i++) await pc.click('#pasa');
-  await pc.click('#frena');
-  await pc.waitForFunction(() => document.getElementById('estado').textContent.includes('Todo guardado'), null, { timeout: 15000 });
-  check(await pc.textContent('#n-pasa') === '5' && await pc.textContent('#n-frena') === '1', 'Contador muestra 5 pasa / 1 frena en Paseo del Bosque');
-
-  console.log('\n== Hoja "respuestas" ==');
-  const hoja = await (await fetch(BASE + '/__datos')).json();
-  const filas = hoja.respuestas;
-  check(filas.length === 20, `una fila por sesión: ${filas.length} filas (esperadas 20)`);
-  const ids = new Set(filas.map(f => f.session_id));
-  check(ids.size === filas.length, 'session_id sin duplicados');
-  for (const s of SESIONES) {
-    const f = filas.find(x => x.session_id === resultados[s.id].sesion);
-    if (!f) { check(false, `S${s.id}: fila encontrada`); continue; }
-    const e = { punto: s.p || 'sin-punto', ...s.espera };
-    const malos = Object.entries(e).filter(([k, v]) => {
-      if (k === 'wa') return v ? !/^\+549221555\d{4}$/.test(f.whatsapp) : f.whatsapp !== '';
-      return String(f[k]) !== String(v);
-    }).map(([k, v]) => `${k}=${k === 'wa' ? f.whatsapp : f[k]} (esperado ${v})`);
-    if (s.espera.wa) {
-      if (f.codigo !== codigos[s.id] && codigos[s.id]) malos.push(`codigo ${f.codigo} ≠ pantalla ${codigos[s.id]}`);
-      if (f.consentimiento !== 'si') malos.push('consentimiento');
-    }
-    if (s.refDe && f.ref !== codigos[s.refDe]) malos.push(`ref=${f.ref}`);
-    check(!malos.length, `S${s.id}: fila correcta ${malos.join(', ')}`);
+  console.log('\n== 1. Completa con número ==');
+  {
+    const ctx = await nuevoCtx(browser);
+    const page = await abrir(ctx);
+    const txt = await page.textContent('#pantalla');
+    check(txt.includes('Todavía no estamos andando') && txt.includes('primer viaje'), 'inicio: aclara que todavía no anda y que hay regalo');
+    check(await page.textContent('#empezar') === 'Quiero mi viaje gratis', 'botón "Quiero mi viaje gratis"');
+    await recorrer(page, ['empezar', 'donde:plaza-moreno', 'terminal', 'caminando', '2-3', 'si', '900', '25-34']);
+    check(await pantalla(page) === 'whatsapp', 'llega a WhatsApp');
+    check(await page.isHidden('#caja-consent'), 'el consentimiento no aparece si no escribió número');
+    await page.fill('#wa', '12');
+    check(await page.isVisible('#caja-consent'), 'el consentimiento aparece al escribir un número');
+    await page.check('#consent');
+    await page.click('#enviar-wa');
+    check(await page.isVisible('#err-wa') && await page.inputValue('#wa') === '12', 'número inválido: muestra error y no borra lo escrito');
+    await page.fill('#wa', '221 555 0101');
+    const antes = await pantalla(page);
+    await page.click('#enviar-wa');
+    await esperarCambio(page, antes);
+    const t = await page.textContent('#pantalla');
+    check(await pantalla(page) === 'codigo' && /RUVU-[A-Z2-9]{4}/.test(t) && t.includes('Te lo mandamos por WhatsApp'), 'código con mensaje de WhatsApp');
+    await recorrer(page, ['bonus']);
+    check(await pantalla(page) === 'fin_bonus', 'bonus respondido');
+    await page.click('#invitar'); await page.waitForTimeout(300);
+    await vaciarCola(page);
+    const sid = sesiones.completa = await sesion(page);
+    const f = await fila(sid);
+    check(f.version === 'v2' && f.parada === 'plaza-moreno' && f.destino === 'terminal' && f.modo_actual === 'caminando' &&
+      f.frecuencia === '2-3' && f.usaria === 'si' && f.precio_max_v2 === '900' && f.edad === '25-34', 'fila con todas las respuestas');
+    check(/^\+549221555\d{4}$/.test(f.whatsapp) && f.consentimiento === 'si' && f.completo === 'si' && /^RUVU-/.test(f.codigo), 'número, consentimiento, código y completo = si');
+    check(f.acepta_precio === '' && f.oferta_elegida === '' && f.cuadras_estimadas === '', 'columnas viejas y cuadras vacías');
+    check(Number(f.precio_mostrado) > 0, `sigue guardando precio_mostrado (${f.precio_mostrado})`);
+    check(f.motivo_viaje === 'facu' && f.dia_primer_viaje === 'lun' && f.franja_primer_viaje === '7-10' && f.ultimo_paso === 'fin_bonus', 'bonus guardado');
+    check(f.invito_amigo === 'si', 'invitó a un amigo');
+    const ev = (await datosHoja()).eventos.filter(e => e.session_id === sid && e.ultimo_paso === 'precio');
+    check(ev.length === 1 && JSON.parse(ev[0].datos).usaria === 'si' && Object.keys(JSON.parse(ev[0].datos)).length === 2,
+      'cada envío manda solo los campos de su pantalla (¿lo usarías? → solo "usaria")');
+    await ctx.close();
   }
-  const conCodigo = filas.filter(f => f.codigo).map(f => f.codigo);
-  check(new Set(conCodigo).size === conCodigo.length, `códigos únicos (${conCodigo.length})`);
-  check(hoja.eventos.filter(e => e.tipo === 'scan').length === 21, `eventos: 21 scans (20 + 1 re-escaneo) → ${hoja.eventos.filter(e => e.tipo === 'scan').length}`);
-  check(hoja.conteo.length === 20, `hoja conteo: 20 filas (19 toques + 1 deshacer) → ${hoja.conteo.length}`);
 
-  console.log('\n== Código repetido (lo resuelve el servidor) ==');
-  const choque = await (await fetch(BASE + '/api', { method: 'POST', body: JSON.stringify({ eventos: [
-    { event_id: 'x1', tipo: 'respuesta', session_id: 'choque', punto: 'bosque', datos: { codigo: codigos[1], ultimo_paso: 'primer_viaje' } }
-  ] }) })).json();
-  check(choque.resultados.x1.codigo && choque.resultados.x1.codigo !== codigos[1], `si el código ya existe devuelve otro (${codigos[1]} → ${choque.resultados.x1.codigo})`);
-  // (esa fila de prueba no tiene timestamps, así que no entra en los conteos)
-
-  console.log('\n== Agregados del doGet ==');
-  const ag = await (await fetch(BASE + '/api?pin=2026')).json();
-  check((await (await fetch(BASE + '/api?pin=0000')).json()).error === 'pin', 'doGet con PIN incorrecto no devuelve datos');
-  check(!JSON.stringify(ag).includes('+549'), 'doGet no expone ningún WhatsApp');
-  const esp = esperados(filas);
-  for (const [punto, e] of Object.entries(esp)) {
-    for (const g of ['qr', 'ref']) {
-      for (const [k, v] of Object.entries(e[g])) {
-        const real = ag.puntos[punto][g][k];
-        if (real !== v) check(false, `${punto}.${g}.${k}: ${real} (esperado ${v})`);
-      }
-    }
+  console.log('\n== 2. Completa sin número ==');
+  {
+    const ctx = await nuevoCtx(browser);
+    const page = await abrir(ctx);
+    await recorrer(page, ['empezar', 'donde:bosque', 'plaza-moreno', 'micro', '4_o_mas', 'depende', '1200', '18-24']);
+    const caja = await page.$eval('#enviar-wa', b => b.getBoundingClientRect());
+    const caja2 = await page.$eval('#no-wa', b => b.getBoundingClientRect());
+    check(caja2.bottom <= 740 && Math.abs(caja.height - caja2.height) < 1 && Math.abs(caja.width - caja2.width) < 1,
+      `los dos botones del mismo tamaño y visibles sin scrollear (abajo en ${Math.round(caja2.bottom)} px)`);
+    await recorrer(page, ['sinwa']);
+    const t = await page.textContent('#pantalla');
+    check(await pantalla(page) === 'codigo' && /RUVU-[A-Z2-9]{4}/.test(t) && t.includes('Sacale captura'), 've el código y "Sacale captura"');
+    check(await page.isVisible('#dejar-numero'), 'botón "Mejor dejame mi número"');
+    const codigo = (await page.textContent('#codigo')).trim();
+    await recorrer(page, ['saltar-bonus']);
+    await vaciarCola(page);
+    const sid = sesiones.sinNumero = await sesion(page);
+    let f = await fila(sid);
+    check(f.completo === 'si' && f.codigo === codigo && f.whatsapp === '' && f.ultimo_paso === 'bonus_saltado', 'completo = si, código guardado, sin número');
+    // vuelve a escanear y deja el número ahora
+    const p2 = await abrir(ctx);
+    check(await pantalla(p2) === 'ya_tiene_codigo' && (await p2.textContent('#codigo')).trim() === codigo, 'al volver ve su mismo código');
+    await p2.close();
+    await ctx.close();
   }
-  const psm = ag.puntos['plaza-san-martin'];
-  check(psm.conteo.pasan === 12 && psm.conteo.frenan === 2, `Plaza San Martín: pasan 12 (10 + 2 frenan), frenan 2 (3 − 1 deshecho) → ${psm.conteo.pasan}/${psm.conteo.frenan}`);
-  check(ag.puntos.bosque.conteo.pasan === 6 && ag.puntos.bosque.conteo.frenan === 1, 'Paseo del Bosque: pasan 6, frenan 1');
-  check(psm.qr.escanean === 3 && psm.ref.escanean === 1, `Plaza San Martín: 3 escaneos por QR + 1 referido → ${psm.qr.escanean}+${psm.ref.escanean}`);
-  check(psm.reescaneos === 1, 'Plaza San Martín: 1 re-escaneo');
-  check(psm.qr.invitan === 1, 'Plaza San Martín: 1 invitó a un amigo');
-  check(ag.puntos['control-calle-8'].abandono.usaria === 1 && ag.puntos['control-calle-8'].abandono.precio === 1, 'Calle 8: abandonos en "usaria" y "precio"');
-  check(ag.puntos.bosque.abandono.inicio === 1, 'Bosque: 1 escaneó y no empezó');
-  check(ag.puntos.terminal.abandono.extra_vuelta === 1, 'Terminal: 1 dejó WhatsApp y abandonó en las preguntas extra');
-  check(ag.puntos['plaza-san-martin'].dist.cuadras['2-3'] >= 1 && ag.puntos['plaza-san-martin'].dist.uso_previo.nunca >= 1, 'Agregados incluyen cuadras y uso previo');
-  check(ag.puntos['sin-punto'].qr.escanean === 1, 'sin-punto registrado');
 
-  console.log('\n== Panel ==');
-  const pp = await ctxC.newPage();
-  await pp.setViewportSize({ width: 1100, height: 900 });
-  await pp.goto(BASE + '/panel.html'); // el PIN quedó guardado del contador
+  console.log('\n== 2b. Sin número y después "Mejor dejame mi número" ==');
+  {
+    const ctx = await nuevoCtx(browser);
+    const page = await abrir(ctx);
+    await recorrer(page, ['empezar', 'donde:terminal', 'plaza-moreno', 'caminando', '2-3', 'si', '600', '35-44', 'sinwa']);
+    const codigo = (await page.textContent('#codigo')).trim();
+    await recorrer(page, ['dejar-numero']);
+    check(await pantalla(page) === 'whatsapp', 'vuelve al paso del número');
+    await recorrer(page, ['wa:221 555 0202']);
+    const t = await page.textContent('#pantalla');
+    check(await pantalla(page) === 'codigo' && t.includes(codigo) && t.includes('Te lo mandamos por WhatsApp'), 'mismo código, ahora con número');
+    await vaciarCola(page);
+    const f = await fila(await sesion(page));
+    check(/^\+549/.test(f.whatsapp) && f.codigo === codigo && f.consentimiento === 'si', 'la fila tiene el número y el mismo código');
+    await ctx.close();
+  }
+
+  console.log('\n== 3. Parada "Otra" + destino "Otro" → cuadras ==');
+  {
+    const precios = {};
+    for (const cuadras of ['10', '40+']) {
+      const ctx = await nuevoCtx(browser);
+      const page = await abrir(ctx);
+      await recorrer(page, ['empezar', 'otra:7 y 50', 'otro']);
+      check(await pantalla(page) === 'cuadras', `aparece "¿Más o menos cuántas cuadras son?" (${cuadras})`);
+      await recorrer(page, [cuadras, 'caminando', '2-3']);
+      const comp = await page.textContent('.comparar');
+      await recorrer(page, ['si', '900', '25-34', 'sinwa']);
+      await vaciarCola(page);
+      const f = await fila(await sesion(page));
+      precios[cuadras] = f;
+      check(f.parada === 'otra' && f.parada_texto === '7 y 50' && f.destino === 'otro' && f.cuadras_estimadas === cuadras,
+        `guarda parada Otra + texto + cuadras_estimadas = ${cuadras} (pantalla: ${comp.replace(/\s+/g, ' ').trim()})`);
+      await ctx.close();
+    }
+    const a = precios['10'], b = precios['40+'];
+    check(a.min_monopatin === 6 && a.min_caminando === 17 && a.precio_mostrado === 950,
+      `10 cuadras (1,3 km): 6 min / 17 caminando / $950 → ${a.min_monopatin}/${a.min_caminando}/$${a.precio_mostrado}`);
+    check(b.min_monopatin === 21 && b.min_caminando === 69 && b.precio_mostrado === 2150,
+      `40 o más (5,2 km): 21 min / 69 caminando / $2150 → ${b.min_monopatin}/${b.min_caminando}/$${b.precio_mostrado}`);
+    // parada conocida + destino conocido → no pregunta cuadras
+    const ctx = await nuevoCtx(browser);
+    const page = await abrir(ctx);
+    await recorrer(page, ['empezar', 'donde:plaza-italia', 'terminal']);
+    check(await pantalla(page) === 'modo', 'con parada y destino conocidos no pregunta cuadras');
+    // "Otra" sin escribir nada también deja seguir
+    await page.close();
+    const p2 = await abrir(ctx);
+    await p2.evaluate(() => localStorage.removeItem('ruvu_sesion'));
+    await p2.reload(); await p2.waitForSelector('#empezar');
+    await recorrer(p2, ['empezar', 'otra']);
+    check(await pantalla(p2) === 'destino', '"Otra" sin escribir nada deja seguir');
+    await vaciarCola(p2);
+    const f = await fila(await sesion(p2));
+    check(f.parada === 'otra' && f.parada_texto === '', 'parada_texto queda vacío');
+    await ctx.close();
+  }
+
+  console.log('\n== 4. Responde "No" → saltea el precio ==');
+  {
+    const ctx = await nuevoCtx(browser);
+    const page = await abrir(ctx);
+    const vistas = [];
+    await recorrer(page, ['empezar', 'donde:calle-8', 'estacion', 'caminando', '1_o_menos', 'no']);
+    check(await pantalla(page) === 'motivo_no', 'pregunta el motivo');
+    await recorrer(page, ['clima']);
+    vistas.push(await pantalla(page));
+    check(vistas[0] === 'edad', 'después del motivo va directo a edad (sin precio)');
+    await recorrer(page, ['45+', 'sinwa']);
+    await vaciarCola(page);
+    const f = await fila(await sesion(page));
+    check(f.usaria === 'no' && f.motivo_no === 'clima' && f.precio_max_v2 === '' && f.completo === 'si' && /^RUVU-/.test(f.codigo), 'fila sin precio, con código');
+    await ctx.close();
+  }
+
+  console.log('\n== 5. Menor de 18 ==');
+  {
+    const ctx = await nuevoCtx(browser);
+    const page = await abrir(ctx);
+    await recorrer(page, ['empezar', 'donde:plaza-moreno', 'plaza-italia', 'micro', '2-3', 'si', '600', 'menos_18']);
+    check(await pantalla(page) === 'fin_menor' && !(await page.$('#codigo')), 'corta sin código');
+    await vaciarCola(page);
+    const f = await fila(await sesion(page));
+    check(f.edad === 'menos_18' && f.codigo === '' && f.ultimo_paso === 'fin_menor', 'fila sin código');
+    const p2 = await abrir(ctx);
+    check(await pantalla(p2) === 'ya_tiene_codigo' && !(await p2.$('#otro-trayecto')) && !(await p2.$('#codigo')), 'al volver: gracias, sin código ni otro trayecto');
+    await ctx.close();
+  }
+
+  console.log('\n== 6. Abandona en el paso 4, vuelve a escanear → retoma ==');
+  {
+    const ctx = await nuevoCtx(browser);
+    let page = await abrir(ctx);
+    await recorrer(page, ['empezar', 'donde:bosque', 'terminal', 'bici']);
+    check(await pantalla(page) === 'frecuencia', 'está en el paso 4 (frecuencia)');
+    const sid = await sesion(page);
+    await vaciarCola(page);
+    await page.close();
+    page = await abrir(ctx);
+    check(await pantalla(page) === 'frecuencia' && await sesion(page) === sid, 'retoma en el paso 4 con el mismo session_id');
+    check((await page.textContent('.retomar')).includes('Seguí donde dejaste') && await page.isVisible('#de-nuevo'), 'muestra "Seguí donde dejaste" y "Empezar de nuevo"');
+    await page.click('#volver');
+    await page.waitForFunction(() => document.getElementById('pantalla').getAttribute('data-pantalla') === 'modo');
+    check(await pantalla(page) === 'modo', 'puede volver atrás desde la sesión retomada');
+    await recorrer(page, ['bici', '2-3', 'si', '900', '18-24', 'wa:221 555 0606']);
+    await vaciarCola(page);
+    const f = await fila(sid);
+    check(f.retomada === 'si' && f.completo === 'si' && f.modo_actual === 'bici' && /^RUVU-/.test(f.codigo), 'la fila original queda completa y marcada retomada = si');
+    const filas = (await datosHoja()).respuestas.filter(x => x.session_id === sid);
+    check(filas.length === 1, 'sigue habiendo una sola fila para esa sesión');
+    // "Empezar de nuevo" crea otra sesión
+    const ctx2 = await nuevoCtx(browser);
+    let q = await abrir(ctx2);
+    await recorrer(q, ['empezar', 'donde:terminal']);
+    const sidViejo = await sesion(q);
+    await q.close();
+    q = await abrir(ctx2);
+    await q.click('#de-nuevo');
+    await q.waitForFunction(() => document.getElementById('pantalla').getAttribute('data-pantalla') === 'parada');
+    check(await sesion(q) !== sidViejo, '"Empezar de nuevo" crea una sesión nueva');
+    await vaciarCola(q);
+    await ctx.close(); await ctx2.close();
+  }
+
+  console.log('\n== 7. Ya completó, vuelve a escanear → otro trayecto sin código nuevo ==');
+  {
+    const ctx = await nuevoCtx(browser);
+    let page = await abrir(ctx);
+    await recorrer(page, ['empezar', 'donde:plaza-san-martin', 'terminal', 'caminando', 'todos_los_dias', 'si', '1500+', '25-34', 'wa:221 555 0707']);
+    const codigo = (await page.textContent('#codigo')).trim();
+    const sid1 = await sesion(page);
+    await vaciarCola(page);
+    await page.close();
+    page = await abrir(ctx);
+    const t = await page.textContent('#pantalla');
+    check(await pantalla(page) === 'ya_tiene_codigo' && t.includes('Ya tenés tu viaje gratis') && t.includes(codigo), 've "Ya tenés tu viaje gratis" con su código');
+    const sidScan = await sesion(page);
+    await page.click('#otro-trayecto');
+    await page.waitForFunction(() => document.getElementById('pantalla').getAttribute('data-pantalla') === 'parada');
+    await recorrer(page, ['donde:terminal', 'plaza-moreno', 'micro', '2-3', 'depende', '600', '25-34']);
+    check(await pantalla(page) === 'codigo' && (await page.textContent('#codigo')).trim() === codigo, 'ya había dejado número: va directo al código, el MISMO');
+    await vaciarCola(page);
+    const sid2 = await sesion(page);
+    const d = await datosHoja();
+    const f2 = d.respuestas.find(x => x.session_id === sid2);
+    const fs = d.respuestas.find(x => x.session_id === sidScan);
+    check(sid2 !== sid1 && f2.repetido === 'si' && f2.codigo === codigo && f2.destino === 'plaza-moreno', 'sesión nueva con repetido = si y el mismo código');
+    check(fs && fs.ultimo_paso === 'ya_tiene_codigo', 'el escaneo de quien ya tenía código también crea fila (ya_tiene_codigo)');
+    check(d.respuestas.filter(x => x.codigo === codigo).length === 2, 'no se generó otro código');
+    await ctx.close();
+  }
+
+  console.log('\n== 7b. Participante de la encuesta vieja (sin número) responde otro trayecto ==');
+  {
+    const ctx = await nuevoCtx(browser);
+    await ctx.addInitScript(() => {
+      if (!localStorage.getItem('ruvu_participacion')) localStorage.setItem('ruvu_participacion', JSON.stringify({ codigo: null, session_id: 'viejo', ts: '2026-11-01T00:00:00Z' }));
+    });
+    const page = await abrir(ctx);
+    check(await pantalla(page) === 'ya_tiene_codigo' && (await page.textContent('#pantalla')).includes('Ya respondiste'), 've "Ya respondiste" (no tenía código)');
+    await page.click('#otro-trayecto');
+    await page.waitForFunction(() => document.getElementById('pantalla').getAttribute('data-pantalla') === 'parada');
+    await recorrer(page, ['donde:terminal', 'plaza-moreno', 'micro', '2-3', 'si', '900', '18-24']);
+    check(await pantalla(page) === 'whatsapp', 'como no dejó número la primera vez, puede dejarlo ahora');
+    await recorrer(page, ['wa:221 555 0708']);
+    check(/RUVU-/.test(await page.textContent('#codigo')), 'recibe su código');
+    await vaciarCola(page);
+    await ctx.close();
+  }
+
+  console.log('\n== 8. Sin conexión a mitad y respuestas perdidas → sin duplicados ==');
+  {
+    const ctx = await nuevoCtx(browser);
+    const page = await abrir(ctx);
+    await recorrer(page, ['empezar', 'donde:plaza-moreno']);
+    await fetch(BASE + '/__offline?on=1');
+    await recorrer(page, ['terminal', 'caminando', '2-3']);
+    check(await page.evaluate(() => window.__ruvu.cola.pendientes()) > 0, 'sin conexión: quedan envíos en la cola');
+    await fetch(BASE + '/__offline?on=0');
+    // el servidor guarda pero el celular no recibe la respuesta (lo que pasaba en vivo)
+    await fetch(BASE + '/__perder?on=1');
+    await recorrer(page, ['si', '900']);
+    await page.waitForTimeout(2500);
+    await fetch(BASE + '/__perder?on=0');
+    await recorrer(page, ['25-34', 'wa:221 555 0808']);
+    await vaciarCola(page);
+    const sid = await sesion(page);
+    const d = await datosHoja();
+    const ev = d.eventos.filter(e => e.session_id === sid);
+    const ids = ev.map(e => e.event_id);
+    check(new Set(ids).size === ids.length, `ningún event_id repetido en "eventos" (${ids.length} eventos)`);
+    const pasos = ev.filter(e => e.tipo === 'respuesta').map(e => e.ultimo_paso).join(',');
+    check(pasos === 'parada,destino,modo,frecuencia,usaria,precio,edad,whatsapp,codigo', `todos los envíos llegaron una vez y en orden (${pasos})`);
+    const f = d.respuestas.find(x => x.session_id === sid);
+    check(f.precio_max_v2 === '900' && f.completo === 'si', 'la fila quedó completa');
+    await ctx.close();
+  }
+
+  console.log('\n== 9. Modo prueba y computadora ==');
+  {
+    const ctx = await nuevoCtx(browser);
+    const page = await abrir(ctx, '?test=1');
+    await recorrer(page, ['empezar', 'donde:plaza-moreno', 'terminal']);
+    await vaciarCola(page);
+    sesiones.test = await sesion(page);
+    check((await fila(sesiones.test)).test === 'si', '?test=1 guarda test = si');
+    await ctx.close();
+    const pc = await nuevoCtx(browser, UA_PC);
+    const p2 = await abrir(pc);
+    await recorrer(p2, ['empezar', 'donde:plaza-moreno']);
+    await vaciarCola(p2);
+    sesiones.pc = await sesion(p2);
+    await pc.close();
+  }
+
+  console.log('\n== 10. Servidor: reenvío idéntico se ignora y limpieza de duplicados ==');
+  {
+    const ev = { event_id: 'reenvio-1', tipo: 'scan', session_id: 'reenvio', punto: 'sin-punto', ua: UA_MOVIL, datos: { version: 'v2' } };
+    const r1 = await (await fetch(BASE + '/api', { method: 'POST', body: JSON.stringify({ eventos: [ev, ev] }) })).json();
+    const r2 = await (await fetch(BASE + '/api', { method: 'POST', body: JSON.stringify({ eventos: [ev] }) })).json();
+    const n = (await datosHoja()).eventos.filter(e => e.event_id === 'reenvio-1').length;
+    check(n === 1 && r1.ok && r2.resultados['reenvio-1'].duplicado, `el mismo event_id 3 veces → 1 fila (${n})`);
+    check(/eventos: 0 filas/.test(await (await fetch(BASE + '/__correr?f=contarDuplicados')).text()), 'contarDuplicados: 0 con la versión nueva');
+  }
+
+  console.log('\n== Agregados y panel ==');
+  const d = await datosHoja();
+  const ag = await get('/api?pin=2026');
+  check(!JSON.stringify(ag).includes('+549'), 'doGet no expone WhatsApps');
+  check(ag.excluidas.test === 1 && ag.excluidas.computadora === 1, `excluye prueba (${ag.excluidas.test}) y computadora (${ag.excluidas.computadora})`);
+  // Embudo esperado, calculado a mano desde la hoja
+  const v2 = d.respuestas.filter(f => f.version === 'v2' && f.test !== 'si' && /Mobile|iPhone|Android/.test(f.user_agent) && f.ultimo_paso !== 'ya_tiene_codigo');
+  const esp = {
+    escanean: v2.length, empiezan: v2.filter(f => f.timestamp_inicio).length,
+    llegan_precio: v2.filter(f => f.precio_max_v2 || f.ultimo_paso === 'precio').length,
+    dejan_numero: v2.filter(f => f.whatsapp).length, ven_codigo: v2.filter(f => f.codigo).length,
+    responden_bonus: v2.filter(f => f.motivo_viaje || f.dia_primer_viaje).length, invitan: v2.filter(f => f.invito_amigo === 'si').length
+  };
+  const real = ag.versiones.v2.puntos['sin-punto'].qr;
+  const malos = Object.keys(esp).filter(k => esp[k] !== real[k]).map(k => `${k} ${real[k]}≠${esp[k]}`);
+  check(!malos.length, `embudo del doGet coincide con la hoja ${JSON.stringify(esp)} ${malos.join(' ')}`);
+  const p = ag.versiones.v2.puntos['sin-punto'];
+  check(p.retomadas === 3 && p.repetidas === 2 && p.reescaneos >= 3, `retomadas ${p.retomadas}, otro trayecto ${p.repetidas}, ya tenían código ${p.reescaneos}`);
+  check(p.dist.precio_max_v2['900'] >= 3 && !p.dist.acepta_precio.si, 'precio_max_v2 separado de acepta_precio');
+
+  const ctx = await nuevoCtx(browser);
+  const pp = await ctx.newPage();
+  await pp.setViewportSize({ width: 1200, height: 900 });
+  await pp.goto(BASE + '/panel.html');
+  await pp.fill('#pin input', '2026'); await pp.click('#pin button');
   await pp.waitForSelector('#tabla-embudo tr.total');
   const total = await pp.$$eval('#tabla-embudo tr.total td', tds => tds.map(td => td.childNodes[0].textContent.trim()));
-  const qrTot = k => Object.values(ag.puntos).reduce((s, p) => s + p.qr[k], 0);
-  const esperadoPanel = ['Total', '18', '3', String(qrTot('escanean')), String(qrTot('empiezan')), String(qrTot('usaria_si')),
-    String(qrTot('acepta_precio')), String(qrTot('whatsapp')), String(qrTot('invitan'))];
-  check(JSON.stringify(total.slice(0, 9)) === JSON.stringify(esperadoPanel), `fila Total del panel: ${total.slice(0, 9).join(' | ')}`);
-  const sinChoque = filas.filter(f => !f.ref); // por QR (incluye sin-punto)
-  check(Number(total[3]) === sinChoque.length, `panel: escanean por QR = filas sin ref (${sinChoque.length})`);
-  const [descarga] = await Promise.all([pp.waitForEvent('download'), pp.click('#csv')]);
-  const csv = require('fs').readFileSync(await descarga.path(), 'utf8');
-  check(csv.includes('EMBUDO') && csv.includes('plaza-san-martin;12;2;3') && !csv.includes('+549'), 'CSV exportado con embudo y sin WhatsApps');
-  // filtro por fecha: mañana → nada
-  const man = new Date(Date.now() + 86400000);
-  const f = man.getFullYear() + '-' + String(man.getMonth() + 1).padStart(2, '0') + '-' + String(man.getDate()).padStart(2, '0');
-  await pp.fill('#desde', f);
-  await pp.click('#actualizar');
-  await pp.waitForFunction(() => document.querySelector('#tabla-embudo tr.total td:nth-child(4)').childNodes[0].textContent.trim() === '0', null, { timeout: 8000 });
-  check(true, 'filtro "desde mañana" deja todo en 0');
+  check(total[1] === String(esp.escanean) && total[2] === String(esp.empiezan) && total[5] === String(esp.dejan_numero) && total[6] === String(esp.ven_codigo),
+    `fila Total del panel: ${total.slice(0, 9).join(' | ')}`);
+  check((await pp.textContent('#excluidas')).includes('1 sesiones de prueba'), 'el panel dice cuántas sesiones excluyó');
+  await pp.selectOption('#sel-version', 'v1');
+  await pp.waitForTimeout(200);
+  check(await pp.isVisible('#d-acepta_precio'), 'vista de la encuesta anterior con acepta_precio');
 
+  check(!errores.length, 'sin errores de JavaScript ' + errores.join(' | '));
   await browser.close();
   server.close();
   console.log(`\n${fallas ? '✗ ' + fallas + ' verificaciones fallaron' : '✓ Todo OK'}`);
