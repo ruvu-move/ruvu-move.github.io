@@ -89,10 +89,19 @@ async function recorrer(page, acciones) {
     const ctx = await nuevoCtx(browser);
     const page = await abrir(ctx);
     const txt = await page.textContent('#pantalla');
-    check(txt.includes('Todavía no estamos andando') && txt.includes('primer viaje'), 'inicio: aclara que todavía no anda y que hay regalo');
+    check(txt.includes('Todavía no estamos andando') && txt.includes('vamos a llegar más rápido'), 'inicio: "Todavía no estamos andando, pero gracias a tus respuestas…"');
     check(await page.textContent('#empezar') === 'Quiero mi viaje gratis', 'botón "Quiero mi viaje gratis"');
-    await recorrer(page, ['empezar', 'donde:plaza-moreno', 'terminal', 'caminando', '2-3', 'si', '900', '25-34']);
+    await recorrer(page, ['empezar']);
+    const faltas = [await page.textContent('#falta')];
+    for (const x of ['donde:plaza-moreno', 'terminal', 'caminando', '2-3', 'si', '900']) {
+      await recorrer(page, [x]);
+      faltas.push(await page.textContent('#falta'));
+    }
+    check(faltas[0] === 'Te faltan 7 preguntas para tu viaje gratis' && faltas[5] === 'Te faltan 2 preguntas para tu viaje gratis' &&
+      faltas[6] === '¡Última pregunta para tu viaje gratis!', `la barra cuenta lo que falta para el viaje gratis (${faltas[0]} … ${faltas[6]})`);
+    await recorrer(page, ['25-34']);
     check(await pantalla(page) === 'whatsapp', 'llega a WhatsApp');
+    check((await page.textContent('#falta')).includes('Llegaste') && await page.isVisible('.meta-regalo'), 'en WhatsApp la barra está llena: "¡Llegaste!"');
     check(await page.isHidden('#caja-consent'), 'el consentimiento no aparece si no escribió número');
     await page.fill('#wa', '12');
     check(await page.isVisible('#caja-consent'), 'el consentimiento aparece al escribir un número');
@@ -215,6 +224,7 @@ async function recorrer(page, acciones) {
     const vistas = [];
     await recorrer(page, ['empezar', 'donde:calle-8', 'estacion', 'caminando', '1_o_menos', 'no']);
     check(await pantalla(page) === 'motivo_no', 'pregunta el motivo');
+    check(await page.textContent('#falta') === '¡Última pregunta para tu viaje gratis!', 'si dice "No", la cuenta descuenta el precio');
     await recorrer(page, ['clima']);
     vistas.push(await pantalla(page));
     check(vistas[0] === 'edad', 'después del motivo va directo a edad (sin precio)');

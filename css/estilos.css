@@ -455,3 +455,18 @@ h1:focus, h2:focus { outline: none; }
 
 /* Bonus: motivo en dos columnas */
 .chips.dos { grid-template-columns: repeat(2, 1fr); }
+
+/* Barra de arriba: progreso hacia el viaje gratis */
+.barra { flex-wrap: wrap; row-gap: 6px; }
+.barra .progreso { height: 10px; }
+.meta-regalo {
+  flex: none; width: 34px; height: 34px; margin-left: -4px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center; font-size: 18px;
+  background: var(--superficie); border: 2px solid var(--grafito);
+}
+.barra.llego .meta-regalo { border-color: var(--ruvu-verde); background: var(--verde-oscuro); animation: regalo-salto .6s ease-out 2; }
+.falta { flex-basis: 100%; margin: 0; font-size: 13px; font-weight: 700; color: var(--gris-plaza); }
+.falta b { color: var(--ruvu-verde); font-weight: 800; }
+@keyframes regalo-salto { 50% { transform: translateY(-4px) scale(1.12); } }
+@media (prefers-reduced-motion: reduce) { .barra.llego .meta-regalo { animation: none; } }
+.todavia-no span { font-family: var(--fuente); font-weight: 600; font-size: 16px; color: #E2E6E7; letter-spacing: 0; }

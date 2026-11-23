@@ -10,6 +10,7 @@
   var $barra = document.getElementById('barra');
   var $progreso = document.getElementById('progreso');
   var $volver = document.getElementById('volver');
+  var $falta = document.getElementById('falta');
 
   /* ---------- Contexto ---------- */
   var params = new URLSearchParams(location.search);
@@ -149,16 +150,29 @@
     R.store.set('ruvu_participacion', participacion);
   }
 
-  /* ---------- Barra de progreso ----------
-     Cuenta solo las 6 preguntas obligatorias. "¿Dónde estás?" y las condicionales
-     (cuadras, motivo del No) no la hacen avanzar. */
-  var CONTADAS = ['destino', 'modo', 'frecuencia', 'usaria', 'precio', 'edad'];
+  /* ---------- Barra de progreso hacia el viaje gratis ----------
+     Cuenta las preguntas obligatorias del recorrido de cada persona (7, o 6 si
+     dijo "No" y saltea el precio). Las condicionales (cuadras, motivo del No) no
+     suman. Debajo de la barra dice cuántas faltan para el viaje gratis. */
+  var CONTADAS = ['parada', 'destino', 'modo', 'frecuencia', 'usaria', 'precio', 'edad'];
+  var DESPUES_DE = { cuadras: 'destino', motivo_no: 'usaria' }; // condicionales: van después de esta
+  function recorrido() {
+    return CONTADAS.filter(function (id) { return !(id === 'precio' && r.usaria === 'no'); });
+  }
+  /* { pct, faltan } o null si la pantalla no lleva barra */
   function progreso(id) {
-    var anterior = { parada: -1, cuadras: 0, motivo_no: 3 }[id];
-    var i = CONTADAS.indexOf(id);
-    if (i < 0 && anterior === undefined) return id === 'whatsapp' ? 1 : null;
-    if (i < 0) return Math.max(0.04, (anterior + 0.5) / CONTADAS.length);
-    return (i + 0.5) / CONTADAS.length;
+    var lista = recorrido();
+    if (id === 'whatsapp') return { pct: 1, faltan: 0 };
+    var i = lista.indexOf(id), condicional = DESPUES_DE[id];
+    if (condicional) i = lista.indexOf(condicional) + 1;   // ya respondió la anterior
+    else if (i < 0) return null;
+    var faltan = lista.length - i;                          // incluye la pantalla actual
+    return { pct: Math.max(0.04, i / lista.length), faltan: faltan };
+  }
+  function textoFalta(faltan) {
+    if (faltan === 0) return '¡Llegaste! Activá tu <b>viaje gratis</b>';
+    if (faltan === 1) return '¡Última pregunta para tu <b>viaje gratis</b>!';
+    return 'Te faltan ' + faltan + ' preguntas para tu <b>viaje gratis</b>';
   }
 
   /* ---------- Definición de pantallas ----------
@@ -172,8 +186,7 @@
         '<h1 class="titulo-inicio">RUVU llega a La Plata 🛴</h1>' +
         '<p class="sub">Monopatines eléctricos para moverte por la ciudad cuando quieras: sin esperar el micro y sin caminar 30 cuadras.</p>' +
         '<div class="todavia">' +
-        '<p class="todavia-no"><b>Todavía no estamos andando.</b></p>' +
-        '<p class="regalo">Respondé 6 preguntas (1 minuto) y te regalamos tu <b>primer viaje</b> 🎁</p>' +
+        '<p class="todavia-no"><b>Todavía no estamos andando</b><span>, pero gracias a tus respuestas, vamos a llegar más rápido.</span></p>' +
         '</div></div>' +
         '<div class="empuje empuje-trama">' + trama() + '</div><div class="abajo">' +
         '<button type="button" class="btn btn-verde" id="empezar">Quiero mi viaje gratis</button></div>';
@@ -350,7 +363,7 @@
   /* 7. Edad. Menos de 18 corta acá, sin código. */
   P.edad = {
     html: function () {
-      return buho('¡Última pregunta! Después te damos tu <b>viaje gratis</b> 🎁') +
+      return buho('¡Ya casi! Respondé esta y te damos tu <b>viaje gratis</b> 🎁') +
         '<h2>¿Qué edad tenés?</h2>' + opciones([
           ['menos_18', 'Menos de 18'], ['18-24', '18 a 24'], ['25-34', '25 a 34'], ['35-44', '35 a 44'], ['45+', '45 o más']
         ]);
@@ -618,8 +631,10 @@
     var pr = progreso(id);
     $barra.hidden = pr === null;
     if (pr !== null) {
-      $progreso.style.width = Math.round(pr * 100) + '%';
-      $progreso.parentNode.setAttribute('aria-valuenow', Math.round(pr * 100));
+      $progreso.style.width = Math.round(pr.pct * 100) + '%';
+      $progreso.parentNode.setAttribute('aria-valuenow', Math.round(pr.pct * 100));
+      $falta.innerHTML = textoFalta(pr.faltan);
+      $barra.classList.toggle('llego', pr.faltan === 0);
       $volver.hidden = !historial.length || historial[historial.length - 1] === 'inicio';
     }
     if (def.elegir) {
