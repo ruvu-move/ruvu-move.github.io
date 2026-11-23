@@ -97,8 +97,8 @@ async function recorrer(page, acciones) {
       await recorrer(page, [x]);
       faltas.push(await page.textContent('#falta'));
     }
-    check(faltas[0] === 'Te faltan 7 preguntas para tu viaje gratis' && faltas[5] === 'Te faltan 2 preguntas para tu viaje gratis' &&
-      faltas[6] === '¡Última pregunta para tu viaje gratis!', `la barra cuenta lo que falta para el viaje gratis (${faltas[0]} … ${faltas[6]})`);
+    check(faltas[0] === 'Te faltan 7 para tu viaje gratis' && faltas[5] === 'Te faltan 2 para tu viaje gratis' &&
+      faltas[6] === '¡Última pregunta!', `la barra cuenta lo que falta para el viaje gratis (${faltas[0]} … ${faltas[6]})`);
     await recorrer(page, ['25-34']);
     check(await pantalla(page) === 'whatsapp', 'llega a WhatsApp');
     check((await page.textContent('#falta')).includes('Llegaste') && await page.isVisible('.meta-regalo'), 'en WhatsApp la barra está llena: "¡Llegaste!"');
@@ -224,9 +224,9 @@ async function recorrer(page, acciones) {
     const vistas = [];
     await recorrer(page, ['empezar', 'donde:calle-8', 'estacion', 'caminando', '1_o_menos', 'no']);
     check(await pantalla(page) === 'motivo_no', 'pregunta el motivo');
-    check(await page.textContent('#falta') === 'Te faltan 2 preguntas para tu viaje gratis', 'si dice "No": faltan el motivo y la edad (sin precio)');
+    check(await page.textContent('#falta') === 'Te faltan 2 para tu viaje gratis', 'si dice "No": faltan el motivo y la edad (sin precio)');
     await recorrer(page, ['clima']);
-    check(await page.textContent('#falta') === '¡Última pregunta para tu viaje gratis!', 'la edad es la última');
+    check(await page.textContent('#falta') === '¡Última pregunta!', 'la edad es la última');
     vistas.push(await pantalla(page));
     check(vistas[0] === 'edad', 'después del motivo va directo a edad (sin precio)');
     await recorrer(page, ['45+', 'sinwa']);
@@ -296,7 +296,7 @@ async function recorrer(page, acciones) {
     await page.close();
     page = await abrir(ctx);
     const t = await page.textContent('#pantalla');
-    check(await pantalla(page) === 'ya_tiene_codigo' && t.includes('Ya tenés tu viaje gratis') && t.includes(codigo), 've "Ya tenés tu viaje gratis" con su código');
+    check(await pantalla(page) === 'ya_tiene_codigo' && t.includes('Ya participaste') && t.includes('Tu viaje gratis') && t.includes(codigo), 've "¡Ya participaste!" con su código');
     const sidScan = await sesion(page);
     await page.click('#otro-trayecto');
     await page.waitForFunction(() => document.getElementById('pantalla').getAttribute('data-pantalla') === 'parada');

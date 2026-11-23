@@ -470,3 +470,17 @@ h1:focus, h2:focus { outline: none; }
 @keyframes regalo-salto { 50% { transform: translateY(-4px) scale(1.12); } }
 @media (prefers-reduced-motion: reduce) { .barra.llego .meta-regalo { animation: none; } }
 .todavia-no span { font-family: var(--fuente); font-weight: 600; font-size: 16px; color: #E2E6E7; letter-spacing: 0; }
+
+/* ---------- Código como ticket (menos texto, más jerarquía) ---------- */
+.ticket {
+  margin: 12px 0 8px; padding: 12px 14px 14px; border-radius: 22px;
+  border: 3px dashed var(--ruvu-verde); background: var(--superficie);
+  display: flex; flex-direction: column; align-items: center; gap: 2px;
+}
+.ticket .codigo { margin: 0; padding: 2px 0; border: 0; background: none; }
+.ticket-label { font-size: 12px; font-weight: 800; letter-spacing: .18em; text-transform: uppercase; color: var(--ruvu-verde); }
+.ticket-sub { font-size: 13px; font-weight: 600; color: var(--gris-plaza); }
+.nota-codigo { margin: 4px 0 0; font-size: 15px; }
+.compartir { margin-top: 16px; display: grid; gap: 8px; }
+.compartir p { margin: 0; font-size: 14px; color: var(--gris-plaza); }
+.btn-bonus { margin-top: 6px; font-size: 15px; }

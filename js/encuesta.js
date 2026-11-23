@@ -191,9 +191,9 @@
     return { pct: Math.max(0.04, i / lista.length), faltan: faltan };
   }
   function textoFalta(faltan) {
-    if (faltan === 0) return '¡Llegaste! Activá tu <b>viaje gratis</b>';
-    if (faltan === 1) return '¡Última pregunta para tu <b>viaje gratis</b>!';
-    return 'Te faltan ' + faltan + ' preguntas para tu <b>viaje gratis</b>';
+    if (faltan === 0) return '¡Llegaste a tu <b>viaje gratis</b>!';
+    if (faltan === 1) return '¡Última pregunta!';
+    return 'Te faltan ' + faltan + ' para tu <b>viaje gratis</b>';
   }
 
   /* ---------- Definición de pantallas ----------
@@ -348,8 +348,7 @@
       return '<div class="comparar">' +
         '<div><b class="verde">' + r.min_monopatin + ' min</b><span>con RUVU</span></div>' +
         '<div><b>' + r.min_caminando + ' min</b><span>caminando</span></div></div>' +
-        '<h2>Con RUVU llegás en ' + r.min_monopatin + ' min en vez de ' + r.min_caminando +
-        ' caminando. ¿Lo usarías en vez de caminar?</h2>' +
+        '<h2>¿Lo usarías en vez de caminar?</h2>' +
         opciones([['si', 'Sí, de una'], ['depende', 'Depende del precio'], ['no', 'No']]);
     },
     elegir: function (v) {
@@ -360,7 +359,7 @@
 
   P.motivo_no = {
     html: function () {
-      return '<h2>¿Por qué no?</h2><p class="sub">Nos sirve un montón saberlo.</p>' + opciones([
+      return '<h2>¿Por qué no?</h2>' + opciones([
         ['prefiero_caminar', 'Prefiero caminar'], ['inseguro', 'No me siento seguro/a'],
         ['no_se_andar', 'No sé andar'], ['clima', 'Por el clima'], ['otra', 'Otra']
       ]);
@@ -384,7 +383,7 @@
   /* 7. Edad. Menos de 18 corta acá, sin código. */
   P.edad = {
     html: function () {
-      return buho('¡Ya casi! Respondé esta y te damos tu <b>viaje gratis</b> 🎁') +
+      return buho('¡Ya casi! 🎁') +
         '<h2>¿Qué edad tenés?</h2>' + opciones([
           ['menos_18', 'Menos de 18'], ['18-24', '18 a 24'], ['25-34', '25 a 34'], ['35-44', '35 a 44'], ['45+', '45 o más']
         ]);
@@ -410,7 +409,7 @@
   P.whatsapp = {
     html: function () {
       return '<h2>¿A qué número te mandamos tu viaje gratis?</h2>' +
-        '<p class="sub">Lo usamos solo para activar tu código y avisarte el día que arrancamos. No hacemos spam y no compartimos tu número.</p>' +
+        '<p class="sub">Solo para activar tu código y avisarte cuando arranquemos. Sin spam.</p>' +
         '<form id="form-wa" novalidate>' +
         '<div class="campo" id="campo-wa"><label for="wa">Tu WhatsApp</label>' +
         '<input id="wa" type="tel" inputmode="tel" autocomplete="tel-national" placeholder="221 555 1234" maxlength="20">' +
@@ -495,8 +494,9 @@
 
   function botonInvitar(codigo) {
     var msg = C.MENSAJE_INVITACION.replace('{link}', linkInvitacion(codigo));
-    return '<a class="btn btn-verde" id="invitar" target="_blank" rel="noopener" href="https://wa.me/?text=' +
-      encodeURIComponent(msg) + '">Si sabés de alguien que también quiere llegar más rápido, compartile</a>';
+    return '<div class="compartir"><p>¿Sabés de alguien que también quiere llegar más rápido?</p>' +
+      '<a class="btn btn-verde" id="invitar" target="_blank" rel="noopener" href="https://wa.me/?text=' +
+      encodeURIComponent(msg) + '">Compartile</a></div>';
   }
 
   function montarInvitar() {
@@ -504,8 +504,16 @@
     if (a) a.addEventListener('click', function () { enviarEvento('invitacion', { invito_amigo: 'si' }); });
   }
 
+  /* El código como ticket: etiqueta, código y validez en una sola tarjeta. */
   function cajaCodigo(codigo) {
-    return '<div class="codigo" id="codigo">' + esc(codigo) + '</div>';
+    return '<div class="ticket"><span class="ticket-label">🎁 Tu viaje gratis</span>' +
+      '<div class="codigo" id="codigo">' + esc(codigo) + '</div>' +
+      '<span class="ticket-sub">1 viaje de hasta 10 min en el lanzamiento</span></div>';
+  }
+  function notaCodigo(conNumero) {
+    return conNumero
+      ? '<p class="nota-codigo">📲 Te lo mandamos por WhatsApp</p>'
+      : '<p class="nota-codigo">📸 Sacale captura para no perderlo</p>';
   }
 
   /* 9. Pantalla del código (completo = si se marca al llegar acá). */
@@ -515,17 +523,10 @@
       var conNumero = tieneNumero();
       var bonusHecho = r.motivo_viaje || r.dia_primer_viaje || r.franja_primer_viaje;
       // se ganó el viaje: el búho llega en monopatín
-      return buhoMonopatin() + '<h1>¡Listo!</h1>' +
-        '<p class="sub" style="margin-bottom:0">Tu viaje gratis:</p>' + cajaCodigo(r.codigo) +
-        (conNumero
-          ? '<p class="nota-codigo">Te lo mandamos por WhatsApp el día que arrancamos.</p>'
-          : '<p class="nota-codigo">Sacale captura para no perderlo.</p>' +
-            '<button type="button" class="btn-link" id="dejar-numero">Mejor quiero dejar mi número</button>') +
-        '<p class="chica">Válido para 1 viaje de hasta 10 min en el lanzamiento.</p>' +
-        '<div class="abajo">' + botonInvitar(r.codigo) + '</div>' +
-        (bonusHecho ? '' :
-          '<div class="bonus-card"><p><b>¿Nos ayudás con 2 más?</b> <span class="chica">(opcional)</span></p>' +
-          '<button type="button" class="btn btn-secundario" id="ir-bonus">Dale</button></div>');
+      return buhoMonopatin() + '<h1>¡Listo!</h1>' + cajaCodigo(r.codigo) + notaCodigo(conNumero) +
+        (conNumero ? '' : '<button type="button" class="btn-link" id="dejar-numero">Mejor quiero dejar mi número</button>') +
+        botonInvitar(r.codigo) +
+        (bonusHecho ? '' : '<button type="button" class="btn-link btn-bonus" id="ir-bonus">¿Nos ayudás con 2 preguntas más? →</button>');
     },
     montar: function () {
       montarInvitar();
@@ -547,9 +548,9 @@
           return '<button type="button" class="chip" aria-pressed="false" data-v="' + o[0] + '">' + o[1] + '</button>';
         }).join('') + '</div>';
       }
-      return '<h2>¿Nos ayudás con 2 más?</h2><p class="sub">Son opcionales.</p>' +
-        '<p class="etiqueta">1. ¿Para qué ibas a hacer este viaje?</p>' + chips('motivo_viaje', motivos, 'dos') +
-        '<p class="etiqueta">2. ¿Qué día y horario de la primera semana lo usarías?</p>' + chips('dia_primer_viaje', dias) +
+      return '<h2>2 preguntas más</h2><p class="sub">Opcionales.</p>' +
+        '<p class="etiqueta">¿Para qué era el viaje?</p>' + chips('motivo_viaje', motivos, 'dos') +
+        '<p class="etiqueta">¿Cuándo lo usarías la primera semana?</p>' + chips('dia_primer_viaje', dias) +
         chips('franja_primer_viaje', franjas.map(function (f) { return [f, f.replace('-', '–') + ' h']; }), 'cinco') +
         '<div class="abajo"><button type="button" class="btn btn-verde" id="listo-bonus" disabled>Listo</button>' +
         '<button type="button" class="btn btn-secundario" id="saltar-bonus">Saltar</button></div>';
@@ -581,9 +582,7 @@
   P.fin_bonus = {
     clase: 'final',
     html: function () {
-      return buho() + '<h1>¡Gracias!</h1>' +
-        '<p class="sub" style="margin-bottom:0">Tu viaje gratis:</p>' + cajaCodigo(r.codigo) +
-        '<div class="abajo">' + botonInvitar(r.codigo) + '</div>';
+      return buho() + '<h1>¡Gracias!</h1>' + cajaCodigo(r.codigo) + botonInvitar(r.codigo);
     },
     montar: montarInvitar
   };
@@ -605,15 +604,12 @@
       }
       var otro = '<button type="button" class="btn btn-secundario" id="otro-trayecto">Responder por otro trayecto</button>';
       if (!participacion.codigo) {
-        return buho() + '<h1>Ya respondiste, ¡gracias!</h1>' +
-          '<p class="sub">Si querés, contanos otro trayecto y te damos tu viaje gratis.</p>' +
+        return buho() + '<h1>Ya respondiste 🙌</h1>' +
+          '<p class="sub">Contanos otro trayecto y llevate tu viaje gratis.</p>' +
           '<div class="abajo">' + otro + '</div>';
       }
-      return buho() + '<h1>Ya tenés tu viaje gratis</h1>' + cajaCodigo(participacion.codigo) +
-        '<p class="nota-codigo">' + (tieneNumero()
-          ? 'Te lo mandamos por WhatsApp el día que arrancamos.'
-          : 'Sacale captura para no perderlo.') + '</p>' +
-        '<div class="abajo">' + botonInvitar(participacion.codigo) + otro + '</div>';
+      return buho() + '<h1>¡Ya participaste!</h1>' + cajaCodigo(participacion.codigo) +
+        notaCodigo(tieneNumero()) + botonInvitar(participacion.codigo) + '<div class="abajo">' + otro + '</div>';
     },
     montar: function () {
       montarInvitar();
