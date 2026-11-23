@@ -475,7 +475,7 @@
   function botonInvitar(codigo) {
     var msg = C.MENSAJE_INVITACION.replace('{link}', linkInvitacion(codigo));
     return '<a class="btn btn-verde" id="invitar" target="_blank" rel="noopener" href="https://wa.me/?text=' +
-      encodeURIComponent(msg) + '">Invitá a un amigo y sumás otro viaje</a>';
+      encodeURIComponent(msg) + '">Si sabés de alguien que también quiere llegar más rápido, compartile</a>';
   }
 
   function montarInvitar() {

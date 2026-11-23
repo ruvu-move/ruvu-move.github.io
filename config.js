@@ -158,6 +158,6 @@ window.RUVU_CONFIG = {
   /* Código de viaje gratis: RUVU-XXXX con estas letras/números (sin 0, O, 1, I). */
   CODIGO: { prefijo: 'RUVU-', largo: 4, alfabeto: 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789' },
 
-  /* Mensaje que se abre en WhatsApp al tocar "Invitá a un amigo". {link} se reemplaza. */
+  /* Mensaje que se abre en WhatsApp al tocar "Si sabés de alguien… compartile". {link} se reemplaza. */
   MENSAJE_INVITACION: 'Mirá, llega RUVU a La Plata: monopatines eléctricos compartidos 🛴 Fijate cuánto tardarías vos y llevate un viaje gratis 👉 {link}'
 };
