@@ -385,7 +385,7 @@
   };
 
   /* 8. WhatsApp. El consentimiento aparece (y es obligatorio) solo si escribió un número.
-     S.agregarNumero: vino desde la pantalla del código con "Mejor dejame mi número". */
+     S.agregarNumero: vino desde la pantalla del código con "Mejor quiero dejar mi número". */
   P.whatsapp = {
     html: function () {
       return '<h2>¿A qué número te mandamos tu viaje gratis?</h2>' +
@@ -498,7 +498,7 @@
         (conNumero
           ? '<p class="nota-codigo">Te lo mandamos por WhatsApp el día que arrancamos.</p>'
           : '<p class="nota-codigo">Sacale captura para no perderlo.</p>' +
-            '<button type="button" class="btn-link" id="dejar-numero">Mejor dejame mi número</button>') +
+            '<button type="button" class="btn-link" id="dejar-numero">Mejor quiero dejar mi número</button>') +
         '<p class="chica">Válido para 1 viaje de hasta 10 min en el lanzamiento.</p>' +
         '<div class="abajo">' + botonInvitar(r.codigo) + '</div>' +
         (bonusHecho ? '' :

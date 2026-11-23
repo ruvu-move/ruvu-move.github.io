@@ -67,7 +67,7 @@ const UA_MOVIL = 'Mozilla/5.0 (Linux; Android 14; Pixel 8) AppleWebKit/537.36 (K
     await ctx.close();
   }
 
-  // Sin número + "Mejor dejame mi número"
+  // Sin número + "Mejor quiero dejar mi número"
   {
     const { ctx, page } = await nuevo();
     await page.goto(BASE + '/');

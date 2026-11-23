@@ -145,7 +145,7 @@ async function recorrer(page, acciones) {
     await recorrer(page, ['sinwa']);
     const t = await page.textContent('#pantalla');
     check(await pantalla(page) === 'codigo' && /RUVU-[A-Z2-9]{4}/.test(t) && t.includes('Sacale captura'), 've el código y "Sacale captura"');
-    check(await page.isVisible('#dejar-numero'), 'botón "Mejor dejame mi número"');
+    check(await page.isVisible('#dejar-numero'), 'botón "Mejor quiero dejar mi número"');
     const codigo = (await page.textContent('#codigo')).trim();
     await recorrer(page, ['saltar-bonus']);
     await vaciarCola(page);
@@ -159,7 +159,7 @@ async function recorrer(page, acciones) {
     await ctx.close();
   }
 
-  console.log('\n== 2b. Sin número y después "Mejor dejame mi número" ==');
+  console.log('\n== 2b. Sin número y después "Mejor quiero dejar mi número" ==');
   {
     const ctx = await nuevoCtx(browser);
     const page = await abrir(ctx);

@@ -145,7 +145,7 @@ Una pregunta por pantalla, obligatorias y de una sola opción. Arriba, una barra
 6. **¿Cuánto pagarías como máximo?** (`PRECIOS_MAX_V2`) → `precio_max_v2` (`600`, `900`, `1200`, `1500+`, `no`). Se sigue guardando `precio_mostrado`.
 7. **Edad** (menos de 18 corta, sin código).
 8. **WhatsApp:** *Activar mi viaje* o *Seguir sin dejar mi número* (mismo tamaño). El consentimiento aparece y es obligatorio solo si escribe un número.
-9. **Código** para todos los mayores de 18 (`completo = si`). Sin número: "Sacale captura" y *Mejor dejame mi número*.
+9. **Código** para todos los mayores de 18 (`completo = si`). Sin número: "Sacale captura" y *Mejor quiero dejar mi número*.
 10. **Bonus opcional:** para qué + día y horario (*Listo* / *Saltar*).
 
 **Si vuelve a escanear:**
@@ -213,7 +213,7 @@ npm test           # simula sesiones de punta a punta y verifica hoja + panel
 npm run capturas   # regenera /capturas (360 px y 320 px)
 ```
 
-`npm test` recorre con un navegador real (vista de celular): completa con número, sin número (+ "Mejor dejame mi número"), parada "Otra" + destino "Otro" con cuadras (y verifica minutos y precio), "No" que saltea el precio, menor de 18, abandono y retomar con el mismo `session_id`, "Empezar de nuevo", ya completó + otro trayecto sin código nuevo, participante de la encuesta vieja, corte de conexión y **respuestas perdidas** (el servidor guarda pero el celular no se entera: lo que generaba los duplicados) sin un solo `event_id` repetido, modo prueba, computadora, y los totales del doGet y del panel.
+`npm test` recorre con un navegador real (vista de celular): completa con número, sin número (+ "Mejor quiero dejar mi número"), parada "Otra" + destino "Otro" con cuadras (y verifica minutos y precio), "No" que saltea el precio, menor de 18, abandono y retomar con el mismo `session_id`, "Empezar de nuevo", ya completó + otro trayecto sin código nuevo, participante de la encuesta vieja, corte de conexión y **respuestas perdidas** (el servidor guarda pero el celular no se entera: lo que generaba los duplicados) sin un solo `event_id` repetido, modo prueba, computadora, y los totales del doGet y del panel.
 
 ---
 
