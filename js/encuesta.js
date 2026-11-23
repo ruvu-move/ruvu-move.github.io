@@ -108,6 +108,27 @@
   }
   (function () { var i = new Image(); i.src = 'assets/buho.webp'; })();
 
+  /* Búho RUVU que llega en monopatín (pantallas finales). */
+  function buhoMonopatin() {
+    var ruedaRayos = function (cx) {
+      return '<g class="rueda"><circle cx="' + cx + '" cy="92" r="15" fill="#0B0B0B" stroke="#12E39A" stroke-width="4"/>' +
+        '<path d="M' + (cx - 11) + ' 92H' + (cx + 11) + 'M' + cx + ' 81V103" stroke="#FF3D9A" stroke-width="3" stroke-linecap="round"/>' +
+        '<circle cx="' + cx + '" cy="92" r="3" fill="#FF3D9A"/></g>';
+    };
+    var moto = '<svg class="moto" viewBox="0 0 200 110" aria-hidden="true">' +
+      '<path class="estela" d="M-40 60H-8M-52 74H-14M-36 88H-6" stroke="#12E39A" stroke-width="4" stroke-linecap="round"/>' +
+      '<path d="M150 82L162 10" stroke="#F4F4F4" stroke-width="7" stroke-linecap="round"/>' +
+      '<path d="M162 10L170 92" stroke="#F4F4F4" stroke-width="6" stroke-linecap="round"/>' +
+      '<path d="M146 9H176" stroke="#0B0B0B" stroke-width="8" stroke-linecap="round"/>' +
+      '<path d="M146 9H153M169 9H176" stroke="#FF3D9A" stroke-width="8" stroke-linecap="round"/>' +
+      '<rect x="22" y="76" width="134" height="11" rx="5.5" fill="#12E39A"/>' +
+      '<path d="M30 81L22 92" stroke="#F4F4F4" stroke-width="5" stroke-linecap="round"/>' +
+      '<text x="88" y="85" text-anchor="middle" font-family="Unbounded, Arial, sans-serif" font-weight="900" font-size="8" fill="#0B0B0B">RUVU</text>' +
+      ruedaRayos(26) + ruedaRayos(170) + '</svg>';
+    return '<div class="buho-moto" role="img" aria-label="El búho RUVU llega en monopatín">' +
+      '<picture><source srcset="assets/buho.webp" type="image/webp">' +
+      '<img src="assets/buho.gif" alt="" width="300" height="390" decoding="async"></picture>' + moto + '</div>';
+  }
   /* Trama platense: cuadrícula de La Plata con diagonales y plaza central */
   function trama() {
     return '<svg class="trama" viewBox="0 0 600 600" preserveAspectRatio="xMidYMid slice" aria-hidden="true">' +
@@ -493,7 +514,8 @@
     html: function () {
       var conNumero = tieneNumero();
       var bonusHecho = r.motivo_viaje || r.dia_primer_viaje || r.franja_primer_viaje;
-      return buho() + '<h1>¡Listo!</h1>' +
+      // se ganó el viaje: el búho llega en monopatín
+      return buhoMonopatin() + '<h1>¡Listo!</h1>' +
         '<p class="sub" style="margin-bottom:0">Tu viaje gratis:</p>' + cajaCodigo(r.codigo) +
         (conNumero
           ? '<p class="nota-codigo">Te lo mandamos por WhatsApp el día que arrancamos.</p>'
