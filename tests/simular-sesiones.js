@@ -204,16 +204,22 @@ async function recorrer(page, acciones) {
     const page = await abrir(ctx);
     await recorrer(page, ['empezar', 'donde:plaza-italia', 'terminal']);
     check(await pantalla(page) === 'modo', 'con parada y destino conocidos no pregunta cuadras');
-    // "Otra" sin escribir nada también deja seguir
+    // "Otra" es obligatoria: sin escribir no se puede seguir
     await page.close();
     const p2 = await abrir(ctx);
     await p2.evaluate(() => localStorage.removeItem('ruvu_sesion'));
     await p2.reload(); await p2.waitForSelector('#empezar');
-    await recorrer(p2, ['empezar', 'otra']);
-    check(await pantalla(p2) === 'destino', '"Otra" sin escribir nada deja seguir');
+    await recorrer(p2, ['empezar']);
+    await p2.click('#pantalla [data-v="otra"]');
+    check(await p2.isDisabled('#siguiente-otra'), '"Otra" sin escribir: "Siguiente" deshabilitado');
+    await p2.fill('#parada-otra', ' ');
+    check(await p2.isDisabled('#siguiente-otra') && await pantalla(p2) === 'parada', 'solo espacios tampoco deja seguir');
+    await p2.fill('#parada-otra', '13 y 60');
+    await p2.click('#siguiente-otra');
+    await esperarCambio(p2, 'parada');
     await vaciarCola(p2);
     const f = await fila(await sesion(p2));
-    check(f.parada === 'otra' && f.parada_texto === '', 'parada_texto queda vacío');
+    check(f.parada === 'otra' && f.parada_texto === '13 y 60', 'con texto sigue y lo guarda');
     await ctx.close();
   }
 

@@ -137,7 +137,7 @@ Cómo se calcula el viaje:
 Una pregunta por pantalla, obligatorias y de una sola opción. Arriba, una barra con un 🎁 al final muestra cuánto falta para el viaje gratis ("Te faltan 4 preguntas para tu viaje gratis"). Cuenta las preguntas obligatorias del recorrido de cada persona: 7, o 6 si dice "No" (saltea el precio); las condicionales (cuadras, motivo del No) no suman.
 
 0. **Inicio:** "RUVU llega a La Plata" y "**Todavía no estamos andando**, pero gracias a tus respuestas, vamos a llegar más rápido." → *Quiero mi viaje gratis*.
-1. **¿Dónde estás?** Botones con los lugares de `DONDE_ESTAS` (`config.js`) + "Otra", que abre un campo de texto opcional.
+1. **¿Dónde estás?** Botones con los lugares de `DONDE_ESTAS` (`config.js`) + "Otra", que abre un campo de texto obligatorio.
 2. **¿A dónde vas?**
    - 2b. **¿Más o menos cuántas cuadras son?** (10 / 20 / 30 / 40 o más). Solo si la parada es "Otra" o el destino es "Otro". 1 cuadra = `TARIFA.cuadraKm` (0,13 km), sin factor de grilla. Se guarda en `cuadras_estimadas`.
 3. **¿Cómo ibas a ir?** 4. **¿Cuántas veces por semana?**

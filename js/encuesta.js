@@ -220,7 +220,7 @@
     }
   };
 
-  /* 1. ¿Dónde estás? Botones con los lugares; "Otra" abre un campo opcional. */
+  /* 1. ¿Dónde estás? Botones con los lugares; "Otra" abre un campo obligatorio. */
   P.parada = {
     html: function () {
       var lista = (C.DONDE_ESTAS || []).map(paradaPorId).filter(Boolean).map(function (p) {
@@ -229,15 +229,23 @@
       lista.push(['otra', 'Otra']);
       return '<h2>¿Dónde estás?</h2>' + opciones(lista) +
         '<form id="form-otra" class="otra-parada" novalidate autocomplete="off" hidden>' +
-        '<div class="campo"><label for="parada-otra">¿Dónde? <span class="chica">(opcional)</span></label>' +
-        '<input id="parada-otra" type="text" enterkeyhint="next" maxlength="60" placeholder="Ej: 7 y 50"></div>' +
-        '<button type="submit" class="btn btn-verde" id="siguiente-otra">Siguiente</button></form>';
+        '<div class="campo"><label for="parada-otra">¿Dónde?</label>' +
+        '<input id="parada-otra" type="text" enterkeyhint="next" maxlength="60" placeholder="Ej: 7 y 50" required>' +
+        '<p class="error" id="err-otra" hidden>Escribí dónde estás para seguir.</p></div>' +
+        '<button type="submit" class="btn btn-verde" id="siguiente-otra" disabled>Siguiente</button></form>';
     },
     montar: function () {
       var botones = [].slice.call($pantalla.querySelectorAll('.btn-opcion'));
       var form = document.getElementById('form-otra');
       var input = document.getElementById('parada-otra');
       var listo = false;
+      var btnOtra = document.getElementById('siguiente-otra');
+      var errOtra = document.getElementById('err-otra');
+      function textoOtra() { return input.value.trim().replace(/\s+/g, ' '); }
+      input.addEventListener('input', function () {
+        btnOtra.disabled = textoOtra().length < 2;
+        errOtra.hidden = true;
+      });
       function marcar(b) {
         botones.forEach(function (o) {
           o.classList.toggle('elegida', o === b);
@@ -264,11 +272,10 @@
       form.addEventListener('submit', function (e) {
         e.preventDefault();
         if (listo) return;
+        var t = textoOtra();
+        if (t.length < 2) { errOtra.hidden = false; input.focus(); return; } // obligatorio
         listo = true;
-        var campos = { parada: 'otra' };
-        var t = input.value.trim().replace(/\s+/g, ' ');
-        if (t) campos.parada_texto = t.slice(0, 60);
-        guardar(campos, 'destino');
+        guardar({ parada: 'otra', parada_texto: t.slice(0, 60) }, 'destino');
         ir('destino');
       });
       // al volver atrás: queda marcado lo que había elegido
@@ -276,6 +283,7 @@
         marcar(botones[botones.length - 1]);
         form.hidden = false;
         input.value = r.parada_texto || '';
+        btnOtra.disabled = textoOtra().length < 2;
       } else if (r.parada) {
         marcar(botones.filter(function (b) { return b.getAttribute('data-v') === r.parada; })[0]);
       }
