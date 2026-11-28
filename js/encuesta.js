@@ -422,34 +422,39 @@
     elegir: function (v) { guardar({ precio_max_v2: v }, 'primer_viaje'); ir('primer_viaje'); }
   };
 
-  /* 8. Día y franja del primer viaje: las dos obligatorias; "Siguiente" se habilita con las dos. */
+  /* 8. ¿Qué días y horarios lo usarías? Opción múltiple: al menos un día y un horario.
+     Se guardan separados por coma en dia_primer_viaje / franja_primer_viaje (ej. "lun,mie"). */
+  var DIAS = [['lun', 'Lun'], ['mar', 'Mar'], ['mie', 'Mié'], ['jue', 'Jue'], ['vie', 'Vie'], ['sab', 'Sáb'], ['dom', 'Dom']];
+  var FRANJAS = ['7-10', '10-13', '13-16', '16-19', '19-21'];
+  function lista(v) { return v ? String(v).split(',').filter(Boolean) : []; }
   P.primer_viaje = {
     html: function () {
-      var dias = [['lun', 'Lun'], ['mar', 'Mar'], ['mie', 'Mié'], ['jue', 'Jue'], ['vie', 'Vie'], ['sab', 'Sáb'], ['dom', 'Dom']];
-      var franjas = ['7-10', '10-13', '13-16', '16-19', '19-21'];
-      function chips(grupo, lista, clase) {
-        return '<div class="chips ' + (clase || '') + '" data-grupo="' + grupo + '" role="group">' + lista.map(function (o) {
-          var on = r[grupo] === o[0];
+      function chips(grupo, opciones, clase) {
+        var elegidas = lista(r[grupo]);
+        return '<div class="chips ' + (clase || '') + '" data-grupo="' + grupo + '" role="group">' + opciones.map(function (o) {
+          var on = elegidas.indexOf(o[0]) >= 0;
           return '<button type="button" class="chip" aria-pressed="' + on + '" data-v="' + o[0] + '">' + o[1] + '</button>';
         }).join('') + '</div>';
       }
-      return '<h2>¿Qué día y horario de la primera semana lo usarías?</h2>' +
-        '<p class="etiqueta">Día</p>' + chips('dia_primer_viaje', dias) +
-        '<p class="etiqueta">Horario</p>' +
-        chips('franja_primer_viaje', franjas.map(function (f) { return [f, f.replace('-', '–') + ' h']; }), 'cinco') +
+      return '<h2>¿Qué días y horarios lo usarías?</h2><p class="sub sub-corta">Podés elegir varios.</p>' +
+        '<p class="etiqueta">Días</p>' + chips('dia_primer_viaje', DIAS) +
+        '<p class="etiqueta">Horarios</p>' +
+        chips('franja_primer_viaje', FRANJAS.map(function (f) { return [f, f.replace('-', '–') + ' h']; }), 'cinco') +
         '<div class="abajo"><button type="button" class="btn btn-verde" id="siguiente-pv" disabled>Siguiente</button></div>';
     },
     montar: function () {
-      var sel = { dia_primer_viaje: r.dia_primer_viaje, franja_primer_viaje: r.franja_primer_viaje };
       var btn = document.getElementById('siguiente-pv');
-      function revisar() { btn.disabled = !(sel.dia_primer_viaje && sel.franja_primer_viaje); }
+      // valores elegidos de un grupo, en el orden de los botones
+      function valores(grupo) {
+        return [].map.call($pantalla.querySelectorAll('[data-grupo="' + grupo + '"] .chip[aria-pressed="true"]'),
+          function (c) { return c.getAttribute('data-v'); });
+      }
+      function revisar() { btn.disabled = !(valores('dia_primer_viaje').length && valores('franja_primer_viaje').length); }
       [].forEach.call($pantalla.querySelectorAll('.chips'), function (g) {
         g.addEventListener('click', function (e) {
           var b = e.target.closest('.chip');
           if (!b) return;
-          var grupo = g.getAttribute('data-grupo');
-          sel[grupo] = b.getAttribute('data-v'); // una por grupo; tocar otra la cambia
-          [].forEach.call(g.querySelectorAll('.chip'), function (c) { c.setAttribute('aria-pressed', c === b ? 'true' : 'false'); });
+          b.setAttribute('aria-pressed', b.getAttribute('aria-pressed') === 'true' ? 'false' : 'true'); // prende / apaga
           revisar();
         });
       });
@@ -459,7 +464,7 @@
         if (listo || btn.disabled) return;
         listo = true;
         btn.disabled = true;
-        var campos = { dia_primer_viaje: sel.dia_primer_viaje, franja_primer_viaje: sel.franja_primer_viaje };
+        var campos = { dia_primer_viaje: valores('dia_primer_viaje').join(','), franja_primer_viaje: valores('franja_primer_viaje').join(',') };
         if (S.otroTrayecto) { entregarCodigo(campos); return; } // ya tenemos edad y WhatsApp
         guardar(campos, 'edad');
         ir('edad');

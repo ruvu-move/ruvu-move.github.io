@@ -235,6 +235,8 @@ var DISTRIBUCIONES = ['parada', 'destino', 'cuadras_estimadas', 'modo_actual', '
   'precio_max_v2', 'acepta_precio', 'oferta_elegida', 'precio_max', 'motivo_viaje', 'vuelta', 'cuadras', 'uso_previo',
   'dia_primer_viaje', 'franja_primer_viaje'];
 
+var MULTIPLES = { dia_primer_viaje: 1, franja_primer_viaje: 1 };
+
 // Pantallas finales: quien quedó ahí no abandonó
 var FINALES = { fin: 1, fin_sin_whatsapp: 1, fin_menor: 1, codigo: 1, fin_bonus: 1, bonus_saltado: 1, ya_tiene_codigo: 1 };
 // Pantallas a las que se llega después (o en) la del WhatsApp
@@ -309,7 +311,10 @@ function agregados(desde, hasta) {
     DISTRIBUCIONES.forEach(function (k) {
       if (c[k] === undefined) return;
       var v = f[c[k]];
-      if (v !== '' && v !== null && v !== undefined) p.dist[k][v] = (p.dist[k][v] || 0) + 1;
+      if (v === '' || v === null || v === undefined) return;
+      // días y horarios son de opción múltiple ("lun,mie"): cuenta cada uno por separado
+      var vals = MULTIPLES[k] ? String(v).split(',') : [v];
+      vals.forEach(function (x) { if (x !== '') p.dist[k][x] = (p.dist[k][x] || 0) + 1; });
     });
     if (!FINALES[paso]) p.abandono[paso] = (p.abandono[paso] || 0) + 1;
   });

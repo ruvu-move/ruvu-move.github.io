@@ -47,8 +47,8 @@
     parada: '¿Dónde estás?', destino: '¿A dónde vas?', cuadras_estimadas: 'Cuadras estimadas (sin coordenadas)',
     modo_actual: '¿Cómo ibas a ir?', frecuencia: 'Frecuencia semanal', usaria: '¿Lo usarías en vez de caminar?',
     motivo_no: 'Motivo del "No"', precio_max_v2: 'Precio máximo que pagaría (encuesta nueva)', edad: 'Edad',
-    motivo_viaje: '¿Para qué es este viaje?', dia_primer_viaje: 'Día del primer viaje',
-    franja_primer_viaje: 'Horario del primer viaje',
+    motivo_viaje: '¿Para qué es este viaje?', dia_primer_viaje: 'Días que lo usaría (varias opciones)',
+    franja_primer_viaje: 'Horarios que lo usaría (varias opciones)',
     acepta_precio: '¿Pagaría el precio? (encuesta anterior)', oferta_elegida: 'Oferta elegida (encuesta anterior)',
     precio_max: 'Precio máximo (encuesta anterior)', vuelta: '¿Lo usaría para volver? (encuesta anterior)',
     cuadras: 'Cuadras que caminaría (encuesta anterior)', uso_previo: '¿Usó un monopatín eléctrico? (encuesta anterior)'

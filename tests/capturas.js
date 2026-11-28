@@ -58,7 +58,7 @@ const UA_MOVIL = 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWe
     await ir(page, v('2-3')); await foto(page, '05-para-que-es-el-viaje' + s);
     await ir(page, v('facu')); await foto(page, '06-lo-usarias' + s);
     await ir(page, v('si')); await foto(page, '07-precio-maximo' + s);
-    await ir(page, v('900')); await foto(page, '08-dia-y-horario-sin-elegir' + s);
+    await ir(page, v('900')); await foto(page, '08-dias-y-horarios-sin-elegir' + s);
     await pv(page, 'lun', '7-10'); await foto(page, '09-edad' + s);
     await ir(page, v('25-34')); await foto(page, '10-whatsapp' + s);
     await page.fill('#wa', '221 555 1234'); await page.check('#consent');
@@ -92,9 +92,10 @@ const UA_MOVIL = 'Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWe
     await ir(page, v('no')); await foto(page, '14-no-pide-por-que-no');
     await ir(page, v('clima'));
     await page.click('[data-grupo="dia_primer_viaje"] [data-v="vie"]');
-    await foto(page, '15-dia-sin-franja-boton-gris');
-    await page.click('[data-grupo="franja_primer_viaje"] [data-v="16-19"]');
-    await foto(page, '16-dia-y-franja-boton-habilitado');
+    await foto(page, '15-dias-sin-horario-boton-gris');
+    for (const d of ['lun', 'mie']) await page.click(`[data-grupo="dia_primer_viaje"] [data-v="${d}"]`);
+    for (const f of ['7-10', '16-19']) await page.click(`[data-grupo="franja_primer_viaje"] [data-v="${f}"]`);
+    await foto(page, '16-varios-dias-y-horarios-boton-habilitado');
     // 7. WhatsApp: inválido, sin consentimiento, sin número
     await ir(page, '#siguiente-pv'); await ir(page, v('18-24'));
     await page.fill('#wa', '12'); await page.check('#consent'); await page.click('#enviar-wa');

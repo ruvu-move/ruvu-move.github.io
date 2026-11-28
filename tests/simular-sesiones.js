@@ -222,7 +222,7 @@ const HASTA_WA = ['donde:plaza-moreno', 'terminal', 'caminando', '2-3', 'facu', 
     await ctx.close();
   }
 
-  console.log('\n== 4. Día sin franja: no deja seguir ==');
+  console.log('\n== 4. Días y horarios: opción múltiple, sin horario no deja seguir ==');
   {
     const ctx = await nuevoCtx(browser);
     const page = await abrir(ctx);
@@ -234,6 +234,26 @@ const HASTA_WA = ['donde:plaza-moreno', 'terminal', 'caminando', '2-3', 'facu', 
     check(await pantalla(page) === 'primer_viaje', 'tocarlo igual no avanza');
     await page.click('[data-grupo="franja_primer_viaje"] [data-v="19-21"]');
     check(!(await page.isDisabled('#siguiente-pv')), 'con día y franja se habilita');
+    check((await page.textContent('h2')) === '¿Qué días y horarios lo usarías?', 'título "¿Qué días y horarios lo usarías?"');
+    // opción múltiple: varios días y horarios; tocar de nuevo desmarca
+    for (const d of ['lun', 'mie', 'vie']) await page.click(`[data-grupo="dia_primer_viaje"] [data-v="${d}"]`);
+    await page.click('[data-grupo="dia_primer_viaje"] [data-v="vie"]');
+    await page.click('[data-grupo="franja_primer_viaje"] [data-v="7-10"]');
+    await page.click('[data-grupo="franja_primer_viaje"] [data-v="19-21"]'); // desmarca
+    await page.click('[data-grupo="franja_primer_viaje"] [data-v="16-19"]');
+    check(await page.$$eval('.chip[aria-pressed="true"]', c => c.length) === 5, 'marca varios días y horarios a la vez');
+    await page.click('[data-grupo="franja_primer_viaje"] [data-v="7-10"]');
+    await page.click('[data-grupo="franja_primer_viaje"] [data-v="16-19"]');
+    check(await page.isDisabled('#siguiente-pv'), 'si desmarca todos los horarios se vuelve a deshabilitar');
+    await page.click('[data-grupo="franja_primer_viaje"] [data-v="16-19"]');
+    await page.click('[data-grupo="franja_primer_viaje"] [data-v="7-10"]');
+    await page.click('#siguiente-pv'); await esperarPantalla(page, 'edad');
+    await vaciarCola(page);
+    const f = await fila(await sesion(page));
+    check(f.dia_primer_viaje === 'lun,mie,sab' && f.franja_primer_viaje === '7-10,16-19',
+      `guarda todos separados por coma (${f.dia_primer_viaje} · ${f.franja_primer_viaje})`);
+    await page.click('#volver'); await esperarPantalla(page, 'primer_viaje');
+    check(await page.$$eval('.chip[aria-pressed="true"]', c => c.map(x => x.dataset.v).join(',')) === 'lun,mie,sab,7-10,16-19', 'al volver atrás siguen marcados');
     await ctx.close();
   }
 
@@ -521,6 +541,8 @@ const HASTA_WA = ['donde:plaza-moreno', 'terminal', 'caminando', '2-3', 'facu', 
   const total = await pp.$$eval('#tabla-embudo tr.total td', tds => tds.map(td => td.childNodes[0].textContent.trim()));
   check(total[1] === String(real.qr.escanean) && total[2] === String(real.qr.empiezan), `fila Total del panel (QR, sin invitados): ${total.slice(0, 9).join(' | ')}`);
   check(await pp.isVisible('#d-motivo_viaje'), 'el panel muestra "¿Para qué es este viaje?"');
+  const dias = real.dist.dia_primer_viaje;
+  check(dias.lun >= 2 && dias.mie >= 1 && !Object.keys(dias).some(k => k.includes(',')), `el panel cuenta cada día por separado ${JSON.stringify(dias)}`);
 
   check(!errores.length, 'sin errores de JavaScript ' + errores.join(' | '));
   await browser.close();

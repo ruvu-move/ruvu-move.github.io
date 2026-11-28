@@ -493,3 +493,4 @@ h1:focus, h2:focus { outline: none; }
 .opciones.dos .btn-opcion { min-height: 54px; padding: 10px 14px; font-size: 15px; line-height: 1.15; }
 .otro-tray { margin: 0 0 6px; text-transform: uppercase; letter-spacing: .18em; color: var(--ruvu-verde); }
 .otra-parada .error { color: var(--gris-plaza); }
+.sub-corta { margin-bottom: 12px; }

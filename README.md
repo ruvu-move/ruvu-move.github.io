@@ -145,7 +145,7 @@ Arriba, una barra con un 🎁 al final muestra cuánto falta para el viaje grati
 5. **¿Para qué es este viaje?** (`motivo`) → `motivo_viaje`.
 6. **¿Lo usarías?** (`usaria`) "No" → **¿Por qué no?** (`motivo_no`) y saltea el precio.
 7. **¿Cuánto pagarías como máximo?** (`precio`) → `precio_max_v2`.
-8. **¿Qué día y horario de la primera semana lo usarías?** (`primer_viaje`) Día y franja; *Siguiente* se habilita con las dos.
+8. **¿Qué días y horarios lo usarías?** (`primer_viaje`) Opción múltiple: *Siguiente* se habilita con al menos un día y un horario. Se guardan separados por coma en `dia_primer_viaje` y `franja_primer_viaje` (ej. `lun,mie` · `7-10,16-19`); el panel cuenta cada uno por separado.
 9. **Edad** (menos de 18 corta, sin código).
 10. **WhatsApp** (opcional): *Activar mi viaje* o *Seguir sin dejar mi número* (mismo tamaño). Si escribe un número, el número válido y el consentimiento son obligatorios.
 11. **Código** (`completo = si`): código + "Sacale captura" o "Te lo mandamos por WhatsApp" + invitar. Sin número: *Mejor quiero dejar mi número*.
