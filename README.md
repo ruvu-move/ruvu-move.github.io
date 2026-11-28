@@ -132,25 +132,31 @@ Cómo se calcula el viaje:
 
 ---
 
-## Encuesta v2 (flujo actual)
+## Encuesta v2.1 (flujo actual)
 
-Una pregunta por pantalla, obligatorias y de una sola opción. Arriba, una barra con un 🎁 al final muestra cuánto falta para el viaje gratis ("Te faltan 4 preguntas para tu viaje gratis"). Cuenta las preguntas obligatorias del recorrido de cada persona: 7, o 6 si dice "No" (saltea el precio); las condicionales (cuadras, motivo del No) no suman.
+Una pregunta por pantalla y **todas obligatorias** (salvo el WhatsApp). No hay bienvenida: al escanear se ve directo **¿Dónde estás?** con un encabezado corto ("RUVU llega a La Plata 🛴 Todavía no anda: respondé 9 preguntas y te regalamos tu primer viaje."; si llega con `?ref=`: "Te invitaron a RUVU 🛴 …"). Hasta que toque una opción, la fila queda en `ultimo_paso = inicio`; el primer toque marca `timestamp_inicio`.
 
-0. **Inicio:** "RUVU llega a La Plata" y "**Todavía no estamos andando**, pero gracias a tus respuestas, vamos a llegar más rápido." → *Quiero mi viaje gratis*.
-1. **¿Dónde estás?** Botones con los lugares de `DONDE_ESTAS` (`config.js`) + "Otra", que abre un campo de texto obligatorio.
-2. **¿A dónde vas?**
-   - 2b. **¿Más o menos cuántas cuadras son?** (10 / 20 / 30 / 40 o más). Solo si la parada es "Otra" o el destino es "Otro". 1 cuadra = `TARIFA.cuadraKm` (0,13 km), sin factor de grilla. Se guarda en `cuadras_estimadas`.
-3. **¿Cómo ibas a ir?** 4. **¿Cuántas veces por semana?**
-5. **¿Lo usarías?** ("No" → motivo y saltea el precio).
-6. **¿Cuánto pagarías como máximo?** (`PRECIOS_MAX_V2`) → `precio_max_v2` (`600`, `900`, `1200`, `1500+`, `no`). Se sigue guardando `precio_mostrado`.
-7. **Edad** (menos de 18 corta, sin código).
-8. **WhatsApp:** *Activar mi viaje* o *Seguir sin dejar mi número* (mismo tamaño). El consentimiento aparece y es obligatorio solo si escribe un número.
-9. **Código** para todos los mayores de 18 (`completo = si`). Sin número: "Sacale captura" y *Mejor quiero dejar mi número*.
-10. **Bonus opcional:** para qué + día y horario (*Listo* / *Saltar*).
+Arriba, una barra con un 🎁 al final muestra cuánto falta para el viaje gratis. Cuenta las 9 preguntas del recorrido (8 si dice "No" y saltea el precio); las condicionales (cuadras, motivo del No) no suman.
+
+1. **¿Dónde estás?** (`parada`) Botones de `DONDE_ESTAS` (`config.js`, en dos columnas) + "Otra", que abre un campo obligatorio de 3 letras o más ("Contanos dónde estás para calcular tu viaje").
+2. **¿A dónde vas?** (`destino`)
+   - 2b. **¿Más o menos cuántas cuadras son?** (`cuadras`) Solo si la parada es "Otra" o el destino es "Otro". 1 cuadra = `TARIFA.cuadraKm` (0,13 km). Se guarda en `cuadras_estimadas`.
+3. **¿Cómo ibas a ir?** (`modo`) 4. **¿Cuántas veces por semana?** (`frecuencia`)
+5. **¿Para qué es este viaje?** (`motivo`) → `motivo_viaje`.
+6. **¿Lo usarías?** (`usaria`) "No" → **¿Por qué no?** (`motivo_no`) y saltea el precio.
+7. **¿Cuánto pagarías como máximo?** (`precio`) → `precio_max_v2`.
+8. **¿Qué día y horario de la primera semana lo usarías?** (`primer_viaje`) Día y franja; *Siguiente* se habilita con las dos.
+9. **Edad** (menos de 18 corta, sin código).
+10. **WhatsApp** (opcional): *Activar mi viaje* o *Seguir sin dejar mi número* (mismo tamaño). Si escribe un número, el número válido y el consentimiento son obligatorios.
+11. **Código** (`completo = si`): código + "Sacale captura" o "Te lo mandamos por WhatsApp" + invitar. Sin número: *Mejor quiero dejar mi número*.
+
+Si vuelve atrás y cambia una respuesta, se guarda la nueva y se recalcula lo que depende de ella (minutos y precio si cambia el destino; si pasa de "No" a "Sí" se borra el motivo del No, y al revés se borra el precio).
 
 **Si vuelve a escanear:**
-- No terminó → retoma donde quedó, con el mismo `session_id` ("Seguí donde dejaste" · *Empezar de nuevo*). Columna `retomada = si`.
-- Ya terminó → ve su código y puede tocar *Responder por otro trayecto*: sesión nueva con `repetido = si` y **el mismo código**. Si la primera vez no dejó número, puede dejarlo ahora.
+- No terminó → retoma en la **primera pregunta sin responder**, con el mismo `session_id` y todo lo anterior cargado ("Seguí donde dejaste" · *Empezar de nuevo*). Columna `retomada = si`. Si abrió y no tocó nada, no hay nada que retomar.
+- Ya participó (tiene `ruvu_participacion`) → toda sesión de ese celular se guarda con `repetido = si` desde el primer `scan`. Ve su código (`ultimo_paso = ya_tiene_codigo`) y puede tocar *Responder por otro trayecto*: **se reutiliza esa misma sesión**, arranca en ¿A dónde vas? (sin ¿Dónde estás?, así que pregunta las cuadras), saltea edad y WhatsApp y al final muestra **el mismo código**.
+
+**Horas:** `timestamp_scan`, `timestamp_inicio` y `timestamp_fin` (y la columna `timestamp` de `eventos`) son la hora del **servidor** al llegar cada evento. La hora del celular queda solo en `eventos.datos` como `hora_cliente`. La planilla muestra las horas en su zona (*Archivo → Configuración → Zona horaria*: Buenos Aires).
 
 **Modo prueba:** abrí la encuesta con `?test=1` (por ejemplo `https://ruvu-move.github.io/?test=1`). Esas sesiones quedan con `test = si` y el panel no las cuenta. El panel tampoco cuenta sesiones abiertas desde una computadora.
 
@@ -210,7 +216,7 @@ El PDF listo para imprimir (1 cartel A5 con el QR único) está en `qr/carteles-
 npm install
 npm run dev        # http://localhost:8080/   (simula el Apps Script en memoria)
 npm test           # simula sesiones de punta a punta y verifica hoja + panel
-npm run capturas   # regenera /capturas (360 px y 320 px)
+npm run capturas   # regenera /capturas (375 × 667 y 320 px)
 ```
 
 `npm test` recorre con un navegador real (vista de celular): completa con número, sin número (+ "Mejor quiero dejar mi número"), parada "Otra" + destino "Otro" con cuadras (y verifica minutos y precio), "No" que saltea el precio, menor de 18, abandono y retomar con el mismo `session_id`, "Empezar de nuevo", ya completó + otro trayecto sin código nuevo, participante de la encuesta vieja, corte de conexión y **respuestas perdidas** (el servidor guarda pero el celular no se entera: lo que generaba los duplicados) sin un solo `event_id` repetido, modo prueba, computadora, y los totales del doGet y del panel.

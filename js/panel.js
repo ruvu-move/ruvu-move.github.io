@@ -47,24 +47,24 @@
     parada: '¿Dónde estás?', destino: '¿A dónde vas?', cuadras_estimadas: 'Cuadras estimadas (sin coordenadas)',
     modo_actual: '¿Cómo ibas a ir?', frecuencia: 'Frecuencia semanal', usaria: '¿Lo usarías en vez de caminar?',
     motivo_no: 'Motivo del "No"', precio_max_v2: 'Precio máximo que pagaría (encuesta nueva)', edad: 'Edad',
-    motivo_viaje: '¿Para qué es este viaje? (bonus)', dia_primer_viaje: 'Día del primer viaje (bonus)',
-    franja_primer_viaje: 'Horario del primer viaje (bonus)',
+    motivo_viaje: '¿Para qué es este viaje?', dia_primer_viaje: 'Día del primer viaje',
+    franja_primer_viaje: 'Horario del primer viaje',
     acepta_precio: '¿Pagaría el precio? (encuesta anterior)', oferta_elegida: 'Oferta elegida (encuesta anterior)',
     precio_max: 'Precio máximo (encuesta anterior)', vuelta: '¿Lo usaría para volver? (encuesta anterior)',
     cuadras: 'Cuadras que caminaría (encuesta anterior)', uso_previo: '¿Usó un monopatín eléctrico? (encuesta anterior)'
   };
   var ORDEN_DIST = {
-    v2: ['parada', 'destino', 'cuadras_estimadas', 'modo_actual', 'frecuencia', 'usaria', 'motivo_no', 'precio_max_v2', 'edad',
-      'motivo_viaje', 'dia_primer_viaje', 'franja_primer_viaje'],
+    v2: ['parada', 'destino', 'cuadras_estimadas', 'modo_actual', 'frecuencia', 'motivo_viaje', 'usaria', 'motivo_no',
+      'precio_max_v2', 'dia_primer_viaje', 'franja_primer_viaje', 'edad'],
     v1: ['parada', 'destino', 'modo_actual', 'frecuencia', 'usaria', 'motivo_no', 'edad', 'acepta_precio', 'oferta_elegida',
       'precio_max', 'motivo_viaje', 'vuelta', 'cuadras', 'uso_previo', 'dia_primer_viaje', 'franja_primer_viaje']
   };
   var PASOS = [
     ['inicio', 'Inicio (escaneó, no empezó)'], ['parada', '¿Dónde estás?'], ['destino', '¿A dónde vas?'], ['cuadras', 'Cuadras'],
-    ['modo', 'Cómo iba a ir'], ['frecuencia', 'Frecuencia'], ['usaria', '¿Lo usarías?'], ['motivo_no', 'Por qué no'],
-    ['precio', 'Precio'], ['oferta', 'Ofertas (v1)'], ['precio_max', 'Precio máximo (v1)'], ['edad', 'Edad'], ['whatsapp', 'WhatsApp'],
+    ['modo', 'Cómo iba a ir'], ['frecuencia', 'Frecuencia'], ['motivo', 'Para qué es el viaje'], ['usaria', '¿Lo usarías?'],
+    ['motivo_no', 'Por qué no'], ['precio', 'Precio'], ['primer_viaje', 'Día y horario del primer viaje'], ['oferta', 'Ofertas (v1)'], ['precio_max', 'Precio máximo (v1)'], ['edad', 'Edad'], ['whatsapp', 'WhatsApp'],
     ['bonus', 'Bonus'], ['extra_motivo', 'Extra: para qué (v1)'], ['extra_vuelta', 'Extra: vuelta (v1)'],
-    ['extra_cuadras', 'Extra: cuadras (v1)'], ['extra_uso', 'Extra: uso previo (v1)'], ['primer_viaje', 'Día y horario (v1)']
+    ['extra_cuadras', 'Extra: cuadras (v1)'], ['extra_uso', 'Extra: uso previo (v1)']
   ];
   /* [clave, etiqueta, base del %]. La base es el paso anterior, salvo donde el
      flujo se bifurca: el WhatsApp lo ve también quien dijo "No" (que saltea el
@@ -72,7 +72,7 @@
   var EMBUDO = [
     ['escanean', 'Escanean'], ['empiezan', 'Empiezan', 'escanean'], ['llegan_precio', 'Llegan a precio', 'empiezan'],
     ['llegan_whatsapp', 'Llegan a WhatsApp', 'empiezan'], ['dejan_numero', 'Dejan número', 'llegan_whatsapp'],
-    ['ven_codigo', 'Ven el código', 'llegan_whatsapp'], ['responden_bonus', 'Responden bonus', 'ven_codigo'],
+    ['ven_codigo', 'Ven el código', 'llegan_whatsapp'], ['responden_bonus', 'Responden día/horario o bonus', 'ven_codigo'],
     ['invitan', 'Invitan', 'ven_codigo']
   ];
   var BASE_TXT = { empiezan: 'de los que empezaron', llegan_whatsapp: 'de los que llegan a WhatsApp', ven_codigo: 'de los que ven el código' };

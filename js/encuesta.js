@@ -22,7 +22,7 @@
   var participacion = R.store.get('ruvu_participacion', null);
   if (participacion && ref === participacion.codigo) ref = ''; // se escaneó su propio link
 
-  var VERSION = 'v2';
+  var VERSION = 'v2.1';
   var CLAVE_SESION = 'ruvu_sesion';
   var DIAS_PARA_RETOMAR = 3;
   var cola = R.crearCola('ruvu_cola');
@@ -35,7 +35,9 @@
     op = op || {};
     S = {
       v: 2, session_id: R.uid(16), r: {}, paso: null, historial: [],
-      test: esTest, repetido: !!op.repetido, ref: ref, punto: puntoSlug, ts: new Date().toISOString()
+      // repetido: el celular ya participó (tiene "ruvu_participacion"), desde el primer evento
+      test: esTest, repetido: !!op.repetido || !!participacion, ref: ref, punto: puntoSlug,
+      empezo: false, otroTrayecto: false, ts: new Date().toISOString()
     };
     r = S.r;
     historial = S.historial;
@@ -46,8 +48,14 @@
     enviarEvento('scan', datos);
   }
 
+  /* El primer toque en una respuesta marca el inicio (el servidor pone la hora). */
+  function conInicio(campos) {
+    if (!S.empezo) { S.empezo = true; campos.timestamp_inicio = new Date().toISOString(); }
+    return campos;
+  }
+
   function guardarSesion() {
-    if (!S) return;
+    if (!S || !S.empezo) return; // sin tocar nada no hay nada que retomar
     S.ts = new Date().toISOString();
     R.store.set(CLAVE_SESION, S);
   }
@@ -137,8 +145,8 @@
       '<circle cx="300" cy="300" r="24" fill="#FF3D9A"/></svg>';
   }
 
-  function opciones(lista) {
-    return '<div class="opciones">' + lista.map(function (o) {
+  function opciones(lista, clase) {
+    return '<div class="opciones' + (clase ? ' ' + clase : '') + '">' + lista.map(function (o) {
       return '<button type="button" class="btn btn-opcion" data-v="' + esc(o[0]) + '">' + o[1] + '</button>';
     }).join('') + '</div>';
   }
@@ -172,13 +180,17 @@
   }
 
   /* ---------- Barra de progreso hacia el viaje gratis ----------
-     Cuenta las preguntas obligatorias del recorrido de cada persona (7, o 6 si
-     dijo "No" y saltea el precio). Las condicionales (cuadras, motivo del No) no
+     Cuenta las preguntas del recorrido de cada persona (9, u 8 si dijo "No" y
+     saltea el precio; en "otro trayecto" no van ¿Dónde estás? ni la edad). Las condicionales (cuadras, motivo del No) no
      suman. Debajo de la barra dice cuántas faltan para el viaje gratis. */
-  var CONTADAS = ['parada', 'destino', 'modo', 'frecuencia', 'usaria', 'precio', 'edad'];
+  var CONTADAS = ['parada', 'destino', 'modo', 'frecuencia', 'motivo', 'usaria', 'precio', 'primer_viaje', 'edad'];
   var DESPUES_DE = { cuadras: 'destino', motivo_no: 'usaria' }; // condicionales: van después de esta
   function recorrido() {
-    return CONTADAS.filter(function (id) { return !(id === 'precio' && r.usaria === 'no'); });
+    return CONTADAS.filter(function (id) {
+      if (id === 'precio' && r.usaria === 'no') return false;
+      if (S.otroTrayecto && (id === 'parada' || id === 'edad')) return false;
+      return true;
+    });
   }
   /* { pct, faltan } o null si la pantalla no lleva barra */
   function progreso(id) {
@@ -197,41 +209,35 @@
   }
 
   /* ---------- Definición de pantallas ----------
-     html(): contenido. elegir(v): qué hacer al tocar una opción (una sola). */
+     html(): contenido. elegir(v): qué hacer al tocar una opción (una sola).
+     campo: dónde queda la respuesta (para marcarla al volver atrás). */
   var P = {};
 
-  P.inicio = {
-    clase: 'inicio',
-    html: function () {
-      return '<div>' + logo() +
-        '<h1 class="titulo-inicio">RUVU llega a La Plata 🛴</h1>' +
-        '<p class="sub">Monopatines eléctricos para moverte por la ciudad cuando quieras: sin esperar el micro y sin caminar 30 cuadras.</p>' +
-        '<div class="todavia">' +
-        '<p class="todavia-no"><b>Todavía no estamos andando</b><span>, pero gracias a tus respuestas, vamos a llegar más rápido.</span></p>' +
-        '</div></div>' +
-        '<div class="empuje empuje-trama">' + trama() + '</div><div class="abajo">' +
-        '<button type="button" class="btn btn-verde" id="empezar">Quiero mi viaje gratis</button></div>';
-    },
-    montar: function () {
-      document.getElementById('empezar').onclick = function () {
-        guardar({ timestamp_inicio: new Date().toISOString() }, 'parada');
-        ir('parada');
-      };
+  /* Encabezado corto arriba de la primera pregunta (reemplaza la bienvenida). */
+  function encabezado() {
+    var n = CONTADAS.length;
+    if (ref) {
+      return '<header class="encabezado"><p class="enc-titulo">Te invitaron a RUVU 🛴</p>' +
+        '<p class="enc-sub">Respondé ' + n + ' preguntas y tenés tu primer viaje gratis.</p></header>';
     }
-  };
+    return '<header class="encabezado"><p class="enc-titulo">RUVU llega a La Plata 🛴</p>' +
+      '<p class="enc-sub">Todavía no anda: respondé ' + n + ' preguntas y te regalamos tu primer viaje.</p></header>';
+  }
 
-  /* 1. ¿Dónde estás? Botones con los lugares; "Otra" abre un campo obligatorio. */
+  /* 1. ¿Dónde estás? Es lo primero que se ve. Botones con los lugares; "Otra" abre
+     un campo obligatorio (mínimo 3 letras). Hasta que toque algo, ultimo_paso = inicio. */
+  var MIN_OTRA = 3;
   P.parada = {
     html: function () {
       var lista = (C.DONDE_ESTAS || []).map(paradaPorId).filter(Boolean).map(function (p) {
         return [p.id, esc(p.nombre)];
       });
       lista.push(['otra', 'Otra']);
-      return '<h2>¿Dónde estás?</h2>' + opciones(lista) +
+      return encabezado() + '<h2>¿Dónde estás?</h2>' + opciones(lista, 'dos') +
         '<form id="form-otra" class="otra-parada" novalidate autocomplete="off" hidden>' +
         '<div class="campo"><label for="parada-otra">¿Dónde?</label>' +
-        '<input id="parada-otra" type="text" enterkeyhint="next" maxlength="60" placeholder="Ej: 7 y 50" required>' +
-        '<p class="error" id="err-otra" hidden>Escribí dónde estás para seguir.</p></div>' +
+        '<input id="parada-otra" type="text" enterkeyhint="next" maxlength="60" placeholder="Ej: 7 y 50, Plaza Rocha" required>' +
+        '<p class="error" id="err-otra" hidden>Contanos dónde estás para calcular tu viaje</p></div>' +
         '<button type="submit" class="btn btn-verde" id="siguiente-otra" disabled>Siguiente</button></form>';
     },
     montar: function () {
@@ -242,10 +248,12 @@
       var btnOtra = document.getElementById('siguiente-otra');
       var errOtra = document.getElementById('err-otra');
       function textoOtra() { return input.value.trim().replace(/\s+/g, ' '); }
-      input.addEventListener('input', function () {
-        btnOtra.disabled = textoOtra().length < 2;
-        errOtra.hidden = true;
-      });
+      function revisar() {
+        var ok = textoOtra().length >= MIN_OTRA;
+        btnOtra.disabled = !ok;
+        errOtra.hidden = ok;   // el mensaje queda a la vista mientras falte el texto
+      }
+      input.addEventListener('input', revisar);
       function marcar(b) {
         botones.forEach(function (o) {
           o.classList.toggle('elegida', o === b);
@@ -258,7 +266,9 @@
           var v = b.getAttribute('data-v');
           marcar(b);
           if (v === 'otra') {
+            if (!S.empezo) guardar(conInicio({}), 'parada'); // el primer toque ya cuenta como "empezó"
             form.hidden = false;
+            revisar();
             input.focus({ preventScroll: true });
             form.scrollIntoView({ block: 'end', behavior: 'smooth' });
             return;
@@ -266,16 +276,16 @@
           form.hidden = true;
           listo = true;
           botones.forEach(function (o) { o.disabled = o !== b; });
-          setTimeout(function () { guardar({ parada: v }, 'destino'); ir('destino'); }, 140);
+          setTimeout(function () { guardar(conInicio({ parada: v, parada_texto: '' }), 'destino'); ir('destino'); }, 140);
         });
       });
       form.addEventListener('submit', function (e) {
         e.preventDefault();
         if (listo) return;
         var t = textoOtra();
-        if (t.length < 2) { errOtra.hidden = false; input.focus(); return; } // obligatorio
+        if (t.length < MIN_OTRA) { revisar(); input.focus(); return; } // obligatorio
         listo = true;
-        guardar({ parada: 'otra', parada_texto: t.slice(0, 60) }, 'destino');
+        guardar(conInicio({ parada: 'otra', parada_texto: t.slice(0, 60) }), 'destino');
         ir('destino');
       });
       // al volver atrás: queda marcado lo que había elegido
@@ -283,35 +293,43 @@
         marcar(botones[botones.length - 1]);
         form.hidden = false;
         input.value = r.parada_texto || '';
-        btnOtra.disabled = textoOtra().length < 2;
+        revisar();
       } else if (r.parada) {
         marcar(botones.filter(function (b) { return b.getAttribute('data-v') === r.parada; })[0]);
       }
     }
   };
 
-  /* 2. ¿A dónde vas? */
+  /* 2. ¿A dónde vas? En "otro trayecto" es la primera pantalla. */
   P.destino = {
+    campo: 'destino',
     html: function () {
       var o = origen();
       var lista = C.DESTINOS.filter(function (d) {
         // no ofrecer como destino el mismo lugar donde está (a menos de 300 m)
         return !(o && typeof d.lat === 'number' && R.haversineKm(o, d) < 0.3);
       }).map(function (d) { return [d.id, esc(d.nombre)]; });
-      return '<h2>¿A dónde vas?</h2>' + opciones(lista);
+      return (S.otroTrayecto ? '<p class="chica otro-tray">Otro trayecto</p>' : '') + '<h2>¿A dónde vas?</h2>' + opciones(lista);
     },
     elegir: function (v) {
       var viaje = R.calcularViaje(origen(), destinoPorId(v));
-      if (!viaje) { guardar({ destino: v }, 'cuadras'); ir('cuadras'); return; }
-      guardar({
-        destino: v, min_monopatin: viaje.minMonopatin, min_caminando: viaje.minCaminando, precio_mostrado: viaje.precio
-      }, 'modo');
+      var campos = conInicio({ destino: v });
+      if (!viaje) {
+        // sin coordenadas: los minutos se calculan con las cuadras (pantalla siguiente)
+        campos.min_monopatin = ''; campos.min_caminando = ''; campos.precio_mostrado = '';
+        r.min_monopatin = null;
+        guardar(campos, 'cuadras'); ir('cuadras'); return;
+      }
+      campos.min_monopatin = viaje.minMonopatin; campos.min_caminando = viaje.minCaminando;
+      campos.precio_mostrado = viaje.precio; campos.cuadras_estimadas = '';
+      guardar(campos, 'modo');
       ir('modo');
     }
   };
 
   /* 2b. Solo si no hay coordenadas (parada "Otra" o destino "Otro"). */
   P.cuadras = {
+    campo: 'cuadras_estimadas',
     html: function () {
       var ops = C.CUADRAS_OPCIONES;
       var lista = ops.map(function (n, i) {
@@ -331,6 +349,7 @@
 
   /* 3. ¿Cómo ibas a ir? */
   P.modo = {
+    campo: 'modo_actual',
     html: function () {
       return '<h2>¿Cómo ibas a ir?</h2>' + opciones([
         ['caminando', 'Caminando'], ['micro', 'Micro'], ['bici', 'Bici'],
@@ -342,16 +361,29 @@
 
   /* 4. ¿Cuántas veces por semana? */
   P.frecuencia = {
+    campo: 'frecuencia',
     html: function () {
       return '<h2>¿Cuántas veces por semana hacés este trayecto?</h2>' + opciones([
         ['1_o_menos', '1 o menos'], ['2-3', '2 a 3'], ['4_o_mas', '4 o más'], ['todos_los_dias', 'Todos los días']
       ]);
     },
-    elegir: function (v) { guardar({ frecuencia: v }, 'usaria'); ir('usaria'); }
+    elegir: function (v) { guardar({ frecuencia: v }, 'motivo'); ir('motivo'); }
   };
 
-  /* 5. ¿Lo usarías? */
+  /* 5. ¿Para qué es este viaje? (antes era bonus) */
+  P.motivo = {
+    campo: 'motivo_viaje',
+    html: function () {
+      return '<h2>¿Para qué es este viaje?</h2>' + opciones([
+        ['facu', 'Facu'], ['laburo', 'Laburo'], ['tramite_compras', 'Trámite o compras'], ['juntada_paseo', 'Juntada o paseo']
+      ]);
+    },
+    elegir: function (v) { guardar({ motivo_viaje: v }, 'usaria'); ir('usaria'); }
+  };
+
+  /* 6. ¿Lo usarías? Si cambia la respuesta al volver atrás, se borra la que ya no corresponde. */
   P.usaria = {
+    campo: 'usaria',
     html: function () {
       return '<div class="comparar">' +
         '<div><b class="verde">' + r.min_monopatin + ' min</b><span>con RUVU</span></div>' +
@@ -360,23 +392,25 @@
         opciones([['si', 'Sí, de una'], ['depende', 'Depende del precio'], ['no', 'No']]);
     },
     elegir: function (v) {
-      if (v === 'no') { guardar({ usaria: v }, 'motivo_no'); ir('motivo_no'); }
-      else { guardar({ usaria: v }, 'precio'); ir('precio'); }
+      if (v === 'no') { guardar({ usaria: v, precio_max_v2: '' }, 'motivo_no'); ir('motivo_no'); }
+      else { guardar({ usaria: v, motivo_no: '' }, 'precio'); ir('precio'); }
     }
   };
 
   P.motivo_no = {
+    campo: 'motivo_no',
     html: function () {
       return '<h2>¿Por qué no?</h2>' + opciones([
         ['prefiero_caminar', 'Prefiero caminar'], ['inseguro', 'No me siento seguro/a'],
         ['no_se_andar', 'No sé andar'], ['clima', 'Por el clima'], ['otra', 'Otra']
       ]);
     },
-    elegir: function (v) { guardar({ motivo_no: v }, 'edad'); ir('edad'); }
+    elegir: function (v) { guardar({ motivo_no: v }, 'primer_viaje'); ir('primer_viaje'); }
   };
 
-  /* 6. Precio máximo (si respondió "No" en el 5, no se muestra). */
+  /* 7. Precio máximo (si respondió "No" en la 6, no se muestra). */
   P.precio = {
+    campo: 'precio_max_v2',
     html: function () {
       var ops = C.PRECIOS_MAX_V2;
       var lista = ops.map(function (n, i) {
@@ -385,11 +419,57 @@
       lista.push(['no', 'No lo pagaría']);
       return '<h2>¿Cuánto pagarías como máximo por este viaje de ' + r.min_monopatin + ' min?</h2>' + opciones(lista);
     },
-    elegir: function (v) { guardar({ precio_max_v2: v }, 'edad'); ir('edad'); }
+    elegir: function (v) { guardar({ precio_max_v2: v }, 'primer_viaje'); ir('primer_viaje'); }
   };
 
-  /* 7. Edad. Menos de 18 corta acá, sin código. */
+  /* 8. Día y franja del primer viaje: las dos obligatorias; "Siguiente" se habilita con las dos. */
+  P.primer_viaje = {
+    html: function () {
+      var dias = [['lun', 'Lun'], ['mar', 'Mar'], ['mie', 'Mié'], ['jue', 'Jue'], ['vie', 'Vie'], ['sab', 'Sáb'], ['dom', 'Dom']];
+      var franjas = ['7-10', '10-13', '13-16', '16-19', '19-21'];
+      function chips(grupo, lista, clase) {
+        return '<div class="chips ' + (clase || '') + '" data-grupo="' + grupo + '" role="group">' + lista.map(function (o) {
+          var on = r[grupo] === o[0];
+          return '<button type="button" class="chip" aria-pressed="' + on + '" data-v="' + o[0] + '">' + o[1] + '</button>';
+        }).join('') + '</div>';
+      }
+      return '<h2>¿Qué día y horario de la primera semana lo usarías?</h2>' +
+        '<p class="etiqueta">Día</p>' + chips('dia_primer_viaje', dias) +
+        '<p class="etiqueta">Horario</p>' +
+        chips('franja_primer_viaje', franjas.map(function (f) { return [f, f.replace('-', '–') + ' h']; }), 'cinco') +
+        '<div class="abajo"><button type="button" class="btn btn-verde" id="siguiente-pv" disabled>Siguiente</button></div>';
+    },
+    montar: function () {
+      var sel = { dia_primer_viaje: r.dia_primer_viaje, franja_primer_viaje: r.franja_primer_viaje };
+      var btn = document.getElementById('siguiente-pv');
+      function revisar() { btn.disabled = !(sel.dia_primer_viaje && sel.franja_primer_viaje); }
+      [].forEach.call($pantalla.querySelectorAll('.chips'), function (g) {
+        g.addEventListener('click', function (e) {
+          var b = e.target.closest('.chip');
+          if (!b) return;
+          var grupo = g.getAttribute('data-grupo');
+          sel[grupo] = b.getAttribute('data-v'); // una por grupo; tocar otra la cambia
+          [].forEach.call(g.querySelectorAll('.chip'), function (c) { c.setAttribute('aria-pressed', c === b ? 'true' : 'false'); });
+          revisar();
+        });
+      });
+      revisar();
+      var listo = false;
+      btn.onclick = function () {
+        if (listo || btn.disabled) return;
+        listo = true;
+        btn.disabled = true;
+        var campos = { dia_primer_viaje: sel.dia_primer_viaje, franja_primer_viaje: sel.franja_primer_viaje };
+        if (S.otroTrayecto) { entregarCodigo(campos); return; } // ya tenemos edad y WhatsApp
+        guardar(campos, 'edad');
+        ir('edad');
+      };
+    }
+  };
+
+  /* 9. Edad. Menos de 18 corta acá, sin código. */
   P.edad = {
+    campo: 'edad',
     html: function () {
       return buho('¡Ya casi! 🎁') +
         '<h2>¿Qué edad tenés?</h2>' + opciones([
@@ -401,10 +481,6 @@
         guardar({ edad: v, completo: 'si', timestamp_fin: new Date().toISOString() }, 'fin_menor');
         marcarParticipacion({ menor: true });
         ir('fin_menor', { sinVolver: true });
-      } else if (S.repetido && tieneNumero()) {
-        // otro trayecto de alguien que ya dejó su número: directo al código
-        guardar({ edad: v }, 'codigo');
-        entregarCodigo({});
       } else {
         guardar({ edad: v }, 'whatsapp');
         ir('whatsapp');
@@ -412,7 +488,7 @@
     }
   };
 
-  /* 8. WhatsApp. El consentimiento aparece (y es obligatorio) solo si escribió un número.
+  /* 10. WhatsApp. El consentimiento aparece (y es obligatorio) solo si escribió un número.
      S.agregarNumero: vino desde la pantalla del código con "Mejor quiero dejar mi número". */
   P.whatsapp = {
     html: function () {
@@ -524,75 +600,22 @@
       : '<p class="nota-codigo">📸 Sacale captura para no perderlo</p>';
   }
 
-  /* 9. Pantalla del código (completo = si se marca al llegar acá). */
+  /* 11. Pantalla del código (completo = si se marca al llegar acá): código, captura o
+     WhatsApp, e invitar. Ya no hay preguntas abajo. */
   P.codigo = {
     clase: 'final',
     html: function () {
       var conNumero = tieneNumero();
-      var bonusHecho = r.motivo_viaje || r.dia_primer_viaje || r.franja_primer_viaje;
       // se ganó el viaje: el búho llega en monopatín
       return buhoMonopatin() + '<h1>¡Listo!</h1>' + cajaCodigo(r.codigo) + notaCodigo(conNumero) +
-        (conNumero ? '' : '<button type="button" class="btn-link" id="dejar-numero">Mejor quiero dejar mi número</button>') +
         botonInvitar(r.codigo) +
-        (bonusHecho ? '' : '<button type="button" class="btn-link btn-bonus" id="ir-bonus">¿Nos ayudás con 2 preguntas más? →</button>');
+        (conNumero ? '' : '<button type="button" class="btn-link" id="dejar-numero">Mejor quiero dejar mi número</button>');
     },
     montar: function () {
       montarInvitar();
       var d = document.getElementById('dejar-numero');
       if (d) d.onclick = function () { S.agregarNumero = true; ir('whatsapp'); };
-      var b = document.getElementById('ir-bonus');
-      if (b) b.onclick = function () { ir('bonus'); };
     }
-  };
-
-  /* 10. Bonus opcional: motivo + día y franja. */
-  P.bonus = {
-    html: function () {
-      var motivos = [['facu', 'Facu'], ['laburo', 'Laburo'], ['tramite_compras', 'Trámite o compras'], ['juntada_paseo', 'Juntada o paseo']];
-      var dias = [['lun', 'Lun'], ['mar', 'Mar'], ['mie', 'Mié'], ['jue', 'Jue'], ['vie', 'Vie'], ['sab', 'Sáb'], ['dom', 'Dom']];
-      var franjas = ['7-10', '10-13', '13-16', '16-19', '19-21'];
-      function chips(grupo, lista, clase) {
-        return '<div class="chips ' + (clase || '') + '" data-grupo="' + grupo + '">' + lista.map(function (o) {
-          return '<button type="button" class="chip" aria-pressed="false" data-v="' + o[0] + '">' + o[1] + '</button>';
-        }).join('') + '</div>';
-      }
-      return '<h2>2 preguntas más</h2><p class="sub">Opcionales.</p>' +
-        '<p class="etiqueta">¿Para qué era el viaje?</p>' + chips('motivo_viaje', motivos, 'dos') +
-        '<p class="etiqueta">¿Cuándo lo usarías la primera semana?</p>' + chips('dia_primer_viaje', dias) +
-        chips('franja_primer_viaje', franjas.map(function (f) { return [f, f.replace('-', '–') + ' h']; }), 'cinco') +
-        '<div class="abajo"><button type="button" class="btn btn-verde" id="listo-bonus" disabled>Listo</button>' +
-        '<button type="button" class="btn btn-secundario" id="saltar-bonus">Saltar</button></div>';
-    },
-    montar: function () {
-      var sel = {};
-      [].forEach.call($pantalla.querySelectorAll('.chips'), function (g) {
-        g.addEventListener('click', function (e) {
-          var b = e.target.closest('.chip');
-          if (!b) return;
-          var grupo = g.getAttribute('data-grupo'), v = b.getAttribute('data-v');
-          var ya = sel[grupo] === v; // tocar de nuevo la misma la desmarca
-          [].forEach.call(g.querySelectorAll('.chip'), function (c) { c.setAttribute('aria-pressed', !ya && c === b ? 'true' : 'false'); });
-          if (ya) delete sel[grupo]; else sel[grupo] = v;
-          document.getElementById('listo-bonus').disabled = !Object.keys(sel).length;
-        });
-      });
-      document.getElementById('listo-bonus').onclick = function () {
-        guardar(sel, 'fin_bonus');
-        ir('fin_bonus', { sinVolver: true });
-      };
-      document.getElementById('saltar-bonus').onclick = function () {
-        guardar({}, 'bonus_saltado');
-        ir('fin_bonus', { sinVolver: true });
-      };
-    }
-  };
-
-  P.fin_bonus = {
-    clase: 'final',
-    html: function () {
-      return buho() + '<h1>¡Gracias!</h1>' + cajaCodigo(r.codigo) + botonInvitar(r.codigo);
-    },
-    montar: montarInvitar
   };
 
   P.fin_menor = {
@@ -623,15 +646,45 @@
       montarInvitar();
       var b = document.getElementById('otro-trayecto');
       if (b) b.onclick = function () {
-        nuevaSesion({ repetido: true });
-        guardar({ timestamp_inicio: new Date().toISOString() }, 'parada');
-        ir('parada', { sinVolver: true });
+        // reutiliza la sesión de este escaneo (ya marcada repetido = si) y arranca en el destino
+        S.otroTrayecto = true;
+        S.repetido = true;
+        guardar(conInicio({}), 'destino');
+        ir('destino', { sinVolver: true });
       };
     }
   };
 
   /* Pantallas donde la sesión ya no se retoma (terminó o es solo informativa). */
   var NO_RETOMAR = { inicio: 1, codigo: 1, bonus: 1, fin_bonus: 1, fin_menor: 1, ya_tiene_codigo: 1 };
+
+  /* Primera pregunta sin responder, en el orden actual (para retomar). */
+  function primeraSinResponder() {
+    if (!S.otroTrayecto && !r.parada) return 'parada';
+    if (!r.destino) return 'destino';
+    if (!r.min_monopatin) return 'cuadras';
+    if (!r.modo_actual) return 'modo';
+    if (!r.frecuencia) return 'frecuencia';
+    if (!r.motivo_viaje) return 'motivo';
+    if (!r.usaria) return 'usaria';
+    if (r.usaria === 'no' && !r.motivo_no) return 'motivo_no';
+    if (r.usaria !== 'no' && !r.precio_max_v2) return 'precio';
+    if (!r.dia_primer_viaje || !r.franja_primer_viaje) return 'primer_viaje';
+    if (S.otroTrayecto) return 'primer_viaje';
+    if (!r.edad) return 'edad';
+    return 'whatsapp';
+  }
+  /* Pantallas ya respondidas antes de "hasta", en orden (para "Volver" al retomar). */
+  function caminoHasta(hasta) {
+    var orden = [];
+    if (!S.otroTrayecto) orden.push('parada');
+    orden.push('destino');
+    if (r.cuadras_estimadas) orden.push('cuadras');
+    orden.push('modo', 'frecuencia', 'motivo', 'usaria', r.usaria === 'no' ? 'motivo_no' : 'precio', 'primer_viaje');
+    if (!S.otroTrayecto) orden.push('edad');
+    var i = orden.indexOf(hasta);
+    return i < 0 ? orden : orden.slice(0, i);
+  }
 
   /* ---------- Navegación ---------- */
   var actual = null;
@@ -641,7 +694,7 @@
     if (op.sinVolver) historial.length = 0;
     actual = id;
     S.paso = id;
-    if (NO_RETOMAR[id] && id !== 'inicio') R.store.del(CLAVE_SESION);
+    if (NO_RETOMAR[id]) R.store.del(CLAVE_SESION);
     else guardarSesion();
 
     var def = P[id];
@@ -661,7 +714,12 @@
       $progreso.parentNode.setAttribute('aria-valuenow', Math.round(pr.pct * 100));
       $falta.innerHTML = textoFalta(pr.faltan);
       $barra.classList.toggle('llego', pr.faltan === 0);
-      $volver.hidden = !historial.length || historial[historial.length - 1] === 'inicio';
+      $volver.hidden = !historial.length;
+    }
+    if (def.campo && r[def.campo]) { // al volver atrás se ve lo que había elegido
+      [].forEach.call($pantalla.querySelectorAll('.btn-opcion'), function (b) {
+        if (b.getAttribute('data-v') === String(r[def.campo])) { b.classList.add('elegida'); b.setAttribute('aria-pressed', 'true'); }
+      });
     }
     if (def.elegir) {
       var respondida = false;
@@ -671,6 +729,7 @@
           respondida = true;
           $pantalla.querySelectorAll('.btn-opcion').forEach(function (o) {
             o.disabled = o !== b;
+            o.classList.remove('elegida');
             o.setAttribute('aria-pressed', o === b ? 'true' : 'false');
           });
           b.classList.add('elegida');
@@ -683,11 +742,16 @@
     var dn = document.getElementById('de-nuevo');
     if (dn) dn.onclick = function () {
       R.store.del(CLAVE_SESION);
-      var eraRepetido = S.repetido;
+      var eraRepetido = S.repetido, eraOtro = S.otroTrayecto;
       actual = null;
       nuevaSesion({ repetido: eraRepetido });
-      guardar({ timestamp_inicio: new Date().toISOString() }, 'parada');
-      ir('parada', { sinVolver: true });
+      if (eraOtro) {
+        S.otroTrayecto = true;
+        guardar(conInicio({}), 'destino');
+        ir('destino', { sinVolver: true });
+      } else {
+        ir('parada', { sinVolver: true }); // "empezó" recién cuando toque una opción
+      }
     };
     window.scrollTo(0, 0);
     var h = $pantalla.querySelector('h1, h2');
@@ -703,6 +767,7 @@
   function sesionParaRetomar() {
     var g = R.store.get(CLAVE_SESION, null);
     if (!g || g.v !== 2 || !g.session_id || !g.paso || NO_RETOMAR[g.paso] || !P[g.paso]) return null;
+    if (g.empezo === false) return null; // abrió pero nunca tocó nada
     var edad = Date.now() - Date.parse(g.ts || 0);
     if (!(edad >= 0 && edad < DIAS_PARA_RETOMAR * 864e5)) return null;
     return g;
@@ -712,19 +777,22 @@
   if (guardada) {
     S = guardada;
     if (esTest) S.test = true;
+    S.empezo = true;
     r = S.r = S.r || {};
-    historial = S.historial = S.historial || [];
+    // solo pantallas que siguen existiendo (la bienvenida ya no está)
+    var pendiente = primeraSinResponder();
+    historial = S.historial = caminoHasta(pendiente);
     var datosScan = { version: VERSION, retomada: 'si', timestamp_scan: new Date().toISOString() };
     if (S.test) datosScan.test = 'si';
     if (S.repetido) datosScan.repetido = 'si';
     enviarEvento('scan', datosScan);
-    ir(S.paso, { retomando: true });
+    ir(pendiente, { retomando: true });
   } else if (participacion) {
     nuevaSesion({ ultimo_paso: 'ya_tiene_codigo' });
     ir('ya_tiene_codigo');
   } else {
     nuevaSesion();
-    ir('inicio');
+    ir('parada'); // directo a la primera pregunta: ultimo_paso sigue en "inicio" hasta que toque algo
   }
 
   // Para las pruebas automáticas

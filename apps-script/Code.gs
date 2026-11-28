@@ -89,7 +89,7 @@ function doPost(e) {
 function procesar(ev, ctx, filasEventos, filasConteo) {
   var tipo = texto(ev.tipo, 20);
   var datos = (ev.datos && typeof ev.datos === 'object') ? ev.datos : {};
-  var ts = fecha(ev.ts) || ctx.ahora;
+  var ts = fecha(ev.ts) || ctx.ahora; // hora del celular: solo para el contador y como hora_cliente
   var eid = texto(ev.event_id, 40);
 
   // Reenvío de algo que ya se guardó: no se vuelve a escribir nada.
@@ -116,10 +116,11 @@ function procesar(ev, ctx, filasEventos, filasConteo) {
   var sid = texto(ev.session_id, 40);
   if (!sid) return { ok: false, error: 'session_id' };
 
+  // En "eventos" la hora es la del servidor; la del celular queda en el JSON como hora_cliente.
   filasEventos.push(fila('eventos', {
-    timestamp: ts, event_id: texto(ev.event_id, 40), session_id: sid, tipo: tipo,
+    timestamp: ctx.ahora, event_id: texto(ev.event_id, 40), session_id: sid, tipo: tipo,
     punto: texto(ev.punto, 40), ref: texto(ev.ref, 20), ultimo_paso: texto(datos.ultimo_paso, 30),
-    datos: JSON.stringify(datos).slice(0, 1000), user_agent: tipo === 'scan' ? texto(ev.ua, 250) : '',
+    datos: JSON.stringify(datosParaLog(datos, ev.ts)).slice(0, 1000), user_agent: tipo === 'scan' ? texto(ev.ua, 250) : '',
     recibido: ctx.ahora
   }));
 
@@ -137,9 +138,10 @@ function procesar(ev, ctx, filasEventos, filasConteo) {
   if (ev.ua && (!previo || !previo[t.col.user_agent])) cambios.user_agent = texto(ev.ua, 250);
   if (tipo === 'scan') {
     // Cada escaneo crea su fila. Al retomar una sesión no se pisa la hora original.
-    if (!previo || !previo[t.col.timestamp_scan]) cambios.timestamp_scan = fecha(datos.timestamp_scan) || ts;
-    if (datos.version === 'v2') {
-      cambios.version = 'v2';
+    // Hora del servidor (no la del celular, que puede estar mal). Al retomar no se pisa.
+    if (!previo || !previo[t.col.timestamp_scan]) cambios.timestamp_scan = ctx.ahora;
+    if (esV2(datos.version)) {
+      cambios.version = texto(datos.version, 10);
       if (datos.test === 'si') cambios.test = 'si';
       if (datos.repetido === 'si') cambios.repetido = 'si';   // "Responder por otro trayecto"
       if (datos.retomada === 'si') cambios.retomada = 'si';
@@ -153,11 +155,15 @@ function procesar(ev, ctx, filasEventos, filasConteo) {
     CAMPOS_PERMITIDOS.forEach(function (k) {
       if (!(k in datos)) return;
       var v = datos[k];
+      if (k === 'timestamp_inicio' || k === 'timestamp_fin') return; // van abajo, con la hora del servidor
       if (CAMPOS_FECHA[k]) v = fecha(v) || '';
       else if (typeof v === 'number') v = isFinite(v) ? v : '';
       else v = texto(v, 60);
       cambios[k] = v;
     });
+    // Inicio y fin: hora del servidor al llegar el evento; si ya estaban, no se pisan.
+    if ('timestamp_inicio' in datos && !(previo && previo[t.col.timestamp_inicio])) cambios.timestamp_inicio = ctx.ahora;
+    if (('timestamp_fin' in datos || datos.completo === 'si') && !(previo && previo[t.col.timestamp_fin])) cambios.timestamp_fin = ctx.ahora;
     // Si un dato ya cerrado vuelve a llegar (reintento), no "desmarcar" el completo
     var actual = existente ? existente.valores : null;
     if (actual && actual[t.col.completo] === 'si' && cambios.completo === 'no') delete cambios.completo;
@@ -173,6 +179,20 @@ function procesar(ev, ctx, filasEventos, filasConteo) {
   cambios.actualizado = ctx.ahora;
   upsert(t, sid, cambios);
   return res;
+}
+
+/* v2, v2.1, ... (la encuesta nueva) */
+function esV2(v) {
+  return /^v2(\.|$)/.test(String(v || ''));
+}
+
+/* Copia de "datos" para el log de eventos: las horas del celular se guardan
+   solo como hora_cliente (para debug). */
+function datosParaLog(datos, tsCliente) {
+  var d = {};
+  for (var k in datos) if (k !== 'timestamp_scan' && k !== 'timestamp_inicio' && k !== 'timestamp_fin') d[k] = datos[k];
+  d.hora_cliente = texto(datos.timestamp_scan || datos.timestamp_inicio || datos.timestamp_fin || tsCliente, 40);
+  return d;
 }
 
 /* Si el código ya lo tiene otra sesión, genera uno nuevo que no exista. */
@@ -261,7 +281,7 @@ function agregados(desde, hasta) {
     if (!enRango(f[c.timestamp_scan] || f[c.timestamp_inicio])) return;
     if (f[c.test] === 'si') { salida.excluidas.test++; return; }
     if (!esCelular(f[c.user_agent])) { salida.excluidas.computadora++; return; }
-    var ver = f[c.version] === 'v2' ? 'v2' : 'v1';
+    var ver = esV2(f[c.version]) ? 'v2' : 'v1'; // v2.1 se cuenta con la v2
     var p = P(ver, f[c.punto]);
     var paso = f[c.ultimo_paso] || 'inicio';
     if (paso === 'ya_tiene_codigo') { p.reescaneos++; return; } // ya participó: no es una sesión nueva

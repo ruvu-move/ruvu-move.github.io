@@ -484,3 +484,12 @@ h1:focus, h2:focus { outline: none; }
 .compartir { margin-top: 16px; display: grid; gap: 8px; }
 .compartir p { margin: 0; font-size: 14px; color: var(--gris-plaza); }
 .btn-bonus { margin-top: 6px; font-size: 15px; }
+
+/* ---------- v2.1: primera pregunta con encabezado corto (sin bienvenida) ---------- */
+.encabezado { margin: 0 0 14px; padding: 12px 14px; border-radius: 18px; background: var(--superficie); border: 2px solid var(--grafito); }
+.enc-titulo { margin: 0; font-family: var(--titulos); font-weight: 900; font-size: 18px; line-height: 1.15; letter-spacing: -0.01em; }
+.enc-sub { margin: 4px 0 0; color: var(--gris-plaza); font-weight: 600; font-size: 14px; line-height: 1.3; }
+.opciones.dos { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.opciones.dos .btn-opcion { min-height: 54px; padding: 10px 14px; font-size: 15px; line-height: 1.15; }
+.otro-tray { margin: 0 0 6px; text-transform: uppercase; letter-spacing: .18em; color: var(--ruvu-verde); }
+.otra-parada .error { color: var(--gris-plaza); }
